@@ -73,3 +73,8 @@ If a reviewer cannot answer these in under 10 seconds, the package fails the sta
 3. Which files are requirement docs?
 4. Which files are runnable implementation?
 5. What is the publishable delivery surface?
+
+## Companion guides
+
+- `docs/guides/migration-guide.md` — move old packages into the vNext layout
+- `docs/guides/example-authoring-guide.md` — author new examples in the vNext layout

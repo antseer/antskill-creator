@@ -67,7 +67,7 @@ skill-name/
 ```text
 antskill-creator/
 ├── SKILL.md                  # orchestration logic and decision tree
-├── docs/                     # product PRD + package standard
+├── docs/                     # product PRD + package standard + guides
 ├── methodology/              # paradigms, SoT, responsibility split
 ├── sop/                      # S1–S6 stage playbooks
 ├── prompts/                  # L1–L4 design guides
@@ -75,6 +75,13 @@ antskill-creator/
 ├── templates/                # templates, skeletons, validators
 └── examples/                 # full example packages
 ```
+
+## Start here
+
+- Package standard: `docs/standards/package-standard.md`
+- Migration guide: `docs/guides/migration-guide.md`
+- Example authoring guide: `docs/guides/example-authoring-guide.md`
+- Example packages: `examples/README.md`
 
 ## Cases
 
