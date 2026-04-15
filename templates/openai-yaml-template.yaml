@@ -1,0 +1,29 @@
+name: "{{SKILL_SLUG}}"
+display_name: "{{SKILL_NAME}}"
+description: "{{One-line description}}"
+version: "{{VERSION}}"
+author: "Antseer"
+category: "{{crypto | defi | trading | analytics | risk}}"
+tags:
+  - "{{tag1}}"
+  - "{{tag2}}"
+  - "{{tag3}}"
+icon:
+  small: "assets/icon-small.svg"
+  card: "assets/icon-card.svg"
+paradigm: "{{A | B | C}}"
+pipeline_layers:
+  l1_data:
+    sources:
+      - "{{source_1}}"
+      - "{{source_2}}"
+  l2_compute:
+    language: "python"
+  l3_decision:
+    model: "claude-sonnet-4-20250514"
+    fallback: true
+  l4_render:
+    framework: "react"
+    single_file: true
+created: "{{YYYY-MM-DD}}"
+updated: "{{YYYY-MM-DD}}"

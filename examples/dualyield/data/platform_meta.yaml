@@ -1,0 +1,100 @@
+# DualYield 平台安全元数据
+# tier: 1=顶级(Binance/OKX/Bybit), 2=主流(Bitget/KuCoin), 3=新兴/DeFi
+# 运营每月校验一次
+
+platforms:
+  - id: binance
+    name: Binance
+    venue_type: cex
+    tier: 1
+    has_por: true
+    por_last_update: "2025-12-01"
+    audit_count: 3
+    insurance_fund: true
+    founded_year: 2017
+    notes: "全球最大CEX，DCI产品线最全"
+
+  - id: okx
+    name: OKX
+    venue_type: cex
+    tier: 1
+    has_por: true
+    por_last_update: "2025-11-15"
+    audit_count: 2
+    insurance_fund: true
+    founded_year: 2017
+    notes: "双币赢产品支持BTC/ETH/SOL"
+
+  - id: bybit
+    name: Bybit
+    venue_type: cex
+    tier: 1
+    has_por: true
+    por_last_update: "2025-10-20"
+    audit_count: 2
+    insurance_fund: true
+    founded_year: 2018
+    notes: "双币投+鲨鱼鳍产品"
+
+  - id: bitget
+    name: Bitget
+    venue_type: cex
+    tier: 2
+    has_por: true
+    por_last_update: "2025-09-01"
+    audit_count: 1
+    insurance_fund: true
+    founded_year: 2018
+    notes: "鲨鱼鳍为主，部分双币投"
+
+  - id: kucoin
+    name: KuCoin
+    venue_type: cex
+    tier: 2
+    has_por: true
+    por_last_update: "2025-08-15"
+    audit_count: 1
+    insurance_fund: false
+    founded_year: 2017
+    notes: "双币宝产品"
+
+  - id: deribit
+    name: Deribit
+    venue_type: cex
+    tier: 2
+    has_por: false
+    audit_count: 1
+    insurance_fund: true
+    founded_year: 2016
+    notes: "期权专业交易所，IV数据来源"
+
+  - id: ribbon
+    name: Ribbon Finance
+    venue_type: defi
+    tier: 3
+    has_por: false
+    audit_count: 3
+    insurance_fund: false
+    chain: "ethereum"
+    tvl_source: "defillama"
+    notes: "Theta Vault策略，自动售卖期权"
+
+  - id: thetanuts
+    name: Thetanuts Finance
+    venue_type: defi
+    tier: 3
+    has_por: false
+    audit_count: 2
+    insurance_fund: false
+    chain: "multi"
+    notes: "多链期权vault"
+
+  - id: cega
+    name: Cega
+    venue_type: defi
+    tier: 3
+    has_por: false
+    audit_count: 1
+    insurance_fund: false
+    chain: "solana"
+    notes: "奇异期权结构化产品"

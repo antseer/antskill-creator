@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" fill="none">
+  <rect width="1200" height="420" rx="32" fill="#0B0B12"/>
+  <rect x="36" y="36" width="1128" height="348" rx="28" fill="#151525" stroke="#2D2B48"/>
+  <text x="72" y="124" fill="#F3F2FF" font-family="Arial, sans-serif" font-size="56" font-weight="700">AntSkill Creator</text>
+  <text x="72" y="176" fill="#A7A3C7" font-family="Arial, sans-serif" font-size="24">Not a prompt wrapper. A spec-first operating system for creating skills that can be reviewed, implemented, and shipped.</text>
+  <rect x="72" y="232" width="156" height="18" rx="9" fill="#7C6AEF"/>
+  <rect x="72" y="264" width="248" height="18" rx="9" fill="#4ECDC4"/>
+  <rect x="72" y="296" width="198" height="18" rx="9" fill="#FFD93D"/>
+  <rect x="72" y="328" width="126" height="18" rx="9" fill="#FF6B6B"/>
+  <rect x="724" y="102" width="352" height="188" rx="22" fill="#10101A" stroke="#2D2B48"/>
+  <text x="756" y="144" fill="#A7A3C7" font-family="Arial, sans-serif" font-size="20">3 paradigms · 6 stages · 4 layers · 9 refs</text>
+  <path d="M760 184H1036" stroke="#2D2B48" stroke-width="2"/>
+  <text x="760" y="214" fill="#7C6AEF" font-family="Arial, sans-serif" font-size="22" font-weight="700">S1 → S6 gated workflow</text>
+  <text x="760" y="250" fill="#4ECDC4" font-family="Arial, sans-serif" font-size="22" font-weight="700">L1 → L4 architecture split</text>
+  <text x="760" y="286" fill="#FFD93D" font-family="Arial, sans-serif" font-size="22" font-weight="700">Source-of-truth conflict resolution</text>
+</svg>

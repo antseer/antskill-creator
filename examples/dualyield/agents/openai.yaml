@@ -1,0 +1,7 @@
+interface:
+  display_name: "DualYield"
+  short_description: "Recommend dual-investment strike candidates across CEX venues."
+  icon_small: "./assets/dualyield-small.svg"
+  icon_large: "./assets/dualyield-card.svg"
+  brand_color: "#3B82F6"
+  default_prompt: "Use $dualyield to compare dual-investment candidates, explain the top picks, and continue the remaining engineering work honestly."

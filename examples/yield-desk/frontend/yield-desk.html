@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yield Desk · 稳定币收益决策台</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: #07090f;
+  color: rgba(255,255,255,0.96);
+  font-family: 'Manrope', 'Noto Sans SC', system-ui, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+#root { min-height: 100vh; display: flex; }
+
+@keyframes fadeUp { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
+@keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+@keyframes pulse  { 0%,100% {opacity:1;} 50% {opacity:.35;} }
+@keyframes barGrow { from {transform: scaleX(0);} to {transform: scaleX(1);} }
+@keyframes sweep { 0%,100% {opacity:.4;} 50% {opacity:1;} }
+
+::-webkit-scrollbar { width:8px; height:8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+.btn-side { cursor:pointer; transition: all .15s ease; user-select:none; }
+.btn-side:hover { background: rgba(20,232,184,0.06) !important; border-color: rgba(20,232,184,0.35) !important; }
+.run-btn { cursor:pointer; transition: all .15s ease; }
+.run-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 8px 24px -8px rgba(20,232,184,0.5); }
+.run-btn:active { transform: translateY(0); }
+.run-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+.row-card { transition: background .15s, border-color .15s, transform .15s; cursor:pointer; }
+.row-card:hover { background: rgba(255,255,255,0.025) !important; border-color: rgba(20,232,184,0.18) !important; }
+.row-card.selected { background: rgba(20,232,184,0.04) !important; border-color: rgba(20,232,184,0.4) !important; }
+
+.tip-wrap { position:relative; display:inline-block; cursor:help; border-bottom:1px dotted rgba(255,255,255,0.25); }
+.tip-box {
+  position:absolute; bottom: calc(100% + 6px); left:50%; transform:translateX(-50%);
+  background:#13192a; color: rgba(255,255,255,0.92); padding:8px 12px; border-radius:6px;
+  font-size:11px; white-space: normal; width:240px; line-height:1.55;
+  border:1px solid rgba(255,255,255,0.1); z-index:100; opacity:0; pointer-events:none; transition: opacity .15s;
+}
+.tip-wrap:hover .tip-box { opacity:1; }
+.fold-btn { cursor:pointer; transition: color .15s; }
+.fold-btn:hover { color: rgba(255,255,255,0.92) !important; }
+
+.knob { cursor:pointer; transition: all .15s; user-select:none; }
+.knob:hover { background: rgba(255,255,255,0.04) !important; }
+
+input[type="checkbox"].mint {
+  accent-color: #14e8b8;
+  width: 14px; height: 14px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef } = React;
+
+/* ════════════════════════════════════════════════════════════
+   DESIGN TOKENS — editorial / financial magazine, dark
+   ════════════════════════════════════════════════════════════ */
+const MF = "'JetBrains Mono', monospace";
+const SF = "'Manrope', 'Noto Sans SC', system-ui, sans-serif";
+const DF = "'Fraunces', serif";
+const C = {
+  bg: "#07090f",
+  bg2: "#0a0e18",
+  card: "#0f1420",
+  cardHi: "#141a2a",
+  border: "rgba(255,255,255,0.06)",
+  borderHi: "rgba(255,255,255,0.14)",
+  text1: "rgba(255,255,255,0.96)",
+  text2: "rgba(255,255,255,0.74)",
+  text3: "rgba(255,255,255,0.50)",
+  text4: "rgba(255,255,255,0.30)",
+  text5: "rgba(255,255,255,0.16)",
+  mint: "#14e8b8",
+  mintDim: "rgba(20,232,184,0.12)",
+  coral: "#ff8a65",
+  coralDim: "rgba(255,138,101,0.12)",
+  yl: "#f5cd2c",
+  red: "#ff5b6b",
+  divider: "rgba(255,255,255,0.05)",
+};
+
+/* ════════════════════════════════════════════════════════════
+   MOCK DATA — 18 products, CEX + DeFi mixed
+   ════════════════════════════════════════════════════════════ */
+const PRODUCTS = [
+  // ===== CEX =====
+  { id:"bn-flex-usdc", venue:"CEX", platform:"Binance", tier:1, product:"Flexible USDC", asset:"USDC", chain:null,
+    apy:8.3, apy30dAvg:8.1, apy30dStd:0.4, source:"借贷池",
+    type:"flexible", lockDays:0, redeemH:0.1, minAmt:1, fees:"0",
+    kyc:1, regions:["US","CN"],
+    tvl:4.2e9, capacity:Infinity,
+    audits:["独立审计","SOC2"], insurance:true, por:true, secScore:95,
+    why:"全球第一大交易所，活期 T+0，安全与便利顶级，APY 在 CEX 阵营领先" },
+  { id:"bn-lock-usdt-30", venue:"CEX", platform:"Binance", tier:1, product:"Locked USDT 30d", asset:"USDT", chain:null,
+    apy:12.5, apy30dAvg:12.3, apy30dStd:0.6, source:"结构化",
+    type:"locked", lockDays:30, redeemH:0, minAmt:10, fees:"提前赎回失息",
+    kyc:1, regions:["US","CN"],
+    tvl:1.8e9, capacity:8e6,
+    audits:["独立审计"], insurance:true, por:true, secScore:92,
+    why:"30 天锁仓换 12.5% 高息，限额 800 万 USDT，先到先得" },
+  { id:"okx-flex-usdt", venue:"CEX", platform:"OKX", tier:1, product:"Flexible USDT", asset:"USDT", chain:null,
+    apy:7.2, apy30dAvg:7.0, apy30dStd:0.3, source:"借贷池",
+    type:"flexible", lockDays:0, redeemH:0.2, minAmt:1, fees:"0",
+    kyc:1, regions:["US"],
+    tvl:2.1e9, capacity:Infinity,
+    audits:["Hacken"], insurance:true, por:true, secScore:90,
+    why:"OKX 主力活期产品，APY 略低于 Binance 但容量大" },
+  { id:"okx-7d-usdt", venue:"CEX", platform:"OKX", tier:1, product:"Earn 7d USDT", asset:"USDT", chain:null,
+    apy:12.0, apy30dAvg:11.5, apy30dStd:1.2, source:"结构化",
+    type:"locked", lockDays:7, redeemH:0, minAmt:100, fees:"0",
+    kyc:1, regions:["US"],
+    tvl:5.2e8, capacity:8e6,
+    audits:["Hacken"], insurance:true, por:true, secScore:88,
+    why:"短锁仓 7 天，年化 12%，限额型，剩余容量 800 万" },
+  { id:"bybit-flex-usdc", venue:"CEX", platform:"Bybit", tier:1, product:"Flexible USDC", asset:"USDC", chain:null,
+    apy:6.8, apy30dAvg:6.7, apy30dStd:0.3, source:"借贷池",
+    type:"flexible", lockDays:0, redeemH:0.3, minAmt:1, fees:"0",
+    kyc:1, regions:["US","UK"],
+    tvl:9.5e8, capacity:Infinity,
+    audits:["Hacken","Mazars"], insurance:false, por:true, secScore:85,
+    why:"中规中矩的活期，便利性高但 APY 偏低" },
+  { id:"bitget-14d", venue:"CEX", platform:"Bitget", tier:2, product:"Earn 14d USDT", asset:"USDT", chain:null,
+    apy:10.5, apy30dAvg:10.3, apy30dStd:0.5, source:"结构化",
+    type:"locked", lockDays:14, redeemH:0, minAmt:50, fees:"0",
+    kyc:1, regions:["US"],
+    tvl:3.8e8, capacity:5e6,
+    audits:["Cobo Custody"], insurance:false, por:true, secScore:78,
+    why:"Tier-2 平台，14 天锁仓换 10.5%，规模较小" },
+  { id:"kucoin-flex", venue:"CEX", platform:"KuCoin", tier:2, product:"Flexible USDT", asset:"USDT", chain:null,
+    apy:5.5, apy30dAvg:5.4, apy30dStd:0.2, source:"借贷池",
+    type:"flexible", lockDays:0, redeemH:0.5, minAmt:1, fees:"0",
+    kyc:0, regions:[],
+    tvl:6.8e8, capacity:Infinity,
+    audits:["Mazars"], insurance:false, por:true, secScore:75,
+    why:"无 KYC 友好，但 APY 与安全分均一般" },
+  { id:"gate-locked-30", venue:"CEX", platform:"Gate.io", tier:2, product:"Locked 30d", asset:"USDT", chain:null,
+    apy:15.0, apy30dAvg:14.2, apy30dStd:1.8, source:"结构化",
+    type:"locked", lockDays:30, redeemH:0, minAmt:100, fees:"0",
+    kyc:1, regions:["US"],
+    tvl:2.4e8, capacity:3e6,
+    audits:["Armanino"], insurance:false, por:true, secScore:72,
+    why:"年化最高 15% 但平台为 Tier-2，建议小额尝试" },
+  { id:"htx-flex", venue:"CEX", platform:"HTX", tier:2, product:"Flexible USDT", asset:"USDT", chain:null,
+    apy:6.2, apy30dAvg:6.0, apy30dStd:0.4, source:"借贷池",
+    type:"flexible", lockDays:0, redeemH:0.5, minAmt:1, fees:"0",
+    kyc:1, regions:["US","UK","CN"],
+    tvl:5.2e8, capacity:Infinity,
+    audits:["Mazars"], insurance:false, por:false, secScore:65,
+    why:"无储备金证明，谨慎配置" },
+
+  // ===== DeFi =====
+  { id:"aave-eth", venue:"DeFi", platform:"Aave V3", tier:1, product:"USDC Supply", asset:"USDC", chain:"Ethereum",
+    apy:6.6, apy30dAvg:6.4, apy30dStd:0.5, source:"链上借贷",
+    type:"flexible", lockDays:0, redeemH:0.05, minAmt:0, fees:"Gas ~$3",
+    kyc:0, regions:[],
+    tvl:5.8e9, capacity:Infinity,
+    audits:["OpenZeppelin","Trail of Bits","Sigma Prime"], insurance:true, por:false, secScore:94,
+    why:"DeFi 龙头借贷协议，TVL 58 亿，三方审计 + 安全模块覆盖" },
+  { id:"aave-arb", venue:"DeFi", platform:"Aave V3", tier:1, product:"USDC Supply", asset:"USDC", chain:"Arbitrum",
+    apy:5.8, apy30dAvg:5.6, apy30dStd:0.4, source:"链上借贷",
+    type:"flexible", lockDays:0, redeemH:0.05, minAmt:0, fees:"Gas <$0.1",
+    kyc:0, regions:[],
+    tvl:1.2e9, capacity:Infinity,
+    audits:["OpenZeppelin","Trail of Bits"], insurance:true, por:false, secScore:91,
+    why:"L2 上的 Aave，Gas 几乎为零，便利性更佳" },
+  { id:"comp-v3", venue:"DeFi", platform:"Compound V3", tier:1, product:"USDC Supply", asset:"USDC", chain:"Ethereum",
+    apy:4.9, apy30dAvg:4.7, apy30dStd:0.6, source:"链上借贷",
+    type:"flexible", lockDays:0, redeemH:0.05, minAmt:0, fees:"Gas ~$3",
+    kyc:0, regions:[],
+    tvl:1.4e9, capacity:Infinity,
+    audits:["OpenZeppelin","ChainSecurity"], insurance:false, por:false, secScore:90,
+    why:"以太坊最早借贷协议之一，APY 偏低但合约稳定" },
+  { id:"morpho", venue:"DeFi", platform:"Morpho Blue", tier:1, product:"USDC Vault", asset:"USDC", chain:"Ethereum",
+    apy:7.2, apy30dAvg:7.0, apy30dStd:0.7, source:"链上借贷",
+    type:"flexible", lockDays:0, redeemH:0.05, minAmt:0, fees:"Gas ~$3",
+    kyc:0, regions:[],
+    tvl:2.8e9, capacity:Infinity,
+    audits:["Spearbit","Cantina"], insurance:false, por:false, secScore:86,
+    why:"模块化借贷新秀，金库化设计带来比基础协议高 1-2 点的收益" },
+  { id:"pendle-pt", venue:"DeFi", platform:"Pendle", tier:1, product:"PT-USDe Mar25", asset:"USDC", chain:"Ethereum",
+    apy:9.5, apy30dAvg:9.5, apy30dStd:0.0, source:"固定利率",
+    type:"locked", lockDays:155, redeemH:0.1, minAmt:0, fees:"Gas ~$5",
+    kyc:0, regions:[],
+    tvl:6.1e8, capacity:Infinity,
+    audits:["Ackee","WatchPug"], insurance:false, por:false, secScore:82,
+    why:"PT 收益代币 = 锁定到期前固定 9.5% 年化，0 波动" },
+  { id:"spark", venue:"DeFi", platform:"Spark", tier:1, product:"DAI Savings (sDAI)", asset:"DAI", chain:"Ethereum",
+    apy:5.0, apy30dAvg:5.0, apy30dStd:0.1, source:"RWA 国债",
+    type:"flexible", lockDays:0, redeemH:0.05, minAmt:0, fees:"Gas ~$2",
+    kyc:0, regions:[],
+    tvl:2.2e9, capacity:Infinity,
+    audits:["ChainSecurity","Cantina"], insurance:false, por:false, secScore:92,
+    why:"MakerDAO 系，背后是真实美国国债，5% 极稳" },
+  { id:"fluid", venue:"DeFi", platform:"Fluid", tier:2, product:"USDC Lending", asset:"USDC", chain:"Ethereum",
+    apy:6.5, apy30dAvg:6.2, apy30dStd:0.6, source:"借贷+DEX",
+    type:"flexible", lockDays:0, redeemH:0.05, minAmt:0, fees:"Gas ~$3",
+    kyc:0, regions:[],
+    tvl:8.2e8, capacity:Infinity,
+    audits:["StateMind"], insurance:false, por:false, secScore:78,
+    why:"Instadapp 出品的混合协议，新但增长快" },
+  { id:"ethena", venue:"DeFi", platform:"Ethena", tier:2, product:"sUSDe", asset:"USDC", chain:"Ethereum",
+    apy:12.8, apy30dAvg:14.5, apy30dStd:3.2, source:"Delta 中性",
+    type:"flexible", lockDays:7, redeemH:168, minAmt:0, fees:"Gas ~$3",
+    kyc:0, regions:["US"],
+    tvl:3.4e9, capacity:Infinity,
+    audits:["Spearbit","Quantstamp"], insurance:false, por:false, secScore:74,
+    why:"高收益来自资金费率 + ETH 质押，APY 波动大，需理解机制" },
+  { id:"curve-3pool", venue:"DeFi", platform:"Curve", tier:1, product:"3pool LP", asset:"USDC", chain:"Ethereum",
+    apy:3.2, apy30dAvg:3.1, apy30dStd:0.3, source:"DEX LP",
+    type:"flexible", lockDays:0, redeemH:0.05, minAmt:0, fees:"Gas ~$5",
+    kyc:0, regions:[],
+    tvl:1.8e8, capacity:Infinity,
+    audits:["Trail of Bits","MixBytes"], insurance:false, por:false, secScore:88,
+    why:"老牌稳定币 LP，APY 已被大幅稀释" },
+];
+
+// 综合评分计算
+function computeScore(p, ctx) {
+  const apy_n  = Math.min(p.apy30dAvg / 15, 1);          // 15% 封顶
+  const sec_n  = p.secScore / 100;
+  const stab_n = 1 - Math.min((p.apy30dStd / Math.max(p.apy30dAvg,0.1)), 1);
+
+  // 便利分
+  let conv_n;
+  if (p.type === "flexible" && p.redeemH < 1) conv_n = 1;
+  else if (p.type === "flexible") conv_n = 0.85;
+  else if (p.lockDays <= 7) conv_n = 0.75;
+  else if (p.lockDays <= 30) conv_n = 0.55;
+  else conv_n = 0.30;
+
+  // 容量分
+  const cap_n = p.capacity === Infinity ? 1 :
+                Math.min(p.capacity / Math.max(ctx.amount, 1), 1) * 0.85 + 0.15;
+
+  // 权重 — 用户在 sidebar 设置
+  const w = ctx.weights;
+  return Math.round(100 * (
+    w.apy*apy_n + w.sec*sec_n + w.conv*conv_n + w.cap*cap_n + w.stab*stab_n
+  ));
+}
+
+function getWeights(secPriority, convPriority) {
+  // 默认 PRD 权重
+  let w = { apy:0.35, sec:0.25, conv:0.20, cap:0.10, stab:0.10 };
+  if (secPriority === "tier1")   w = { apy:0.25, sec:0.40, conv:0.15, cap:0.10, stab:0.10 };
+  if (secPriority === "loose")   w = { apy:0.45, sec:0.15, conv:0.20, cap:0.10, stab:0.10 };
+  if (convPriority === "flex")   { w.conv += 0.10; w.apy -= 0.05; w.stab -= 0.05; }
+  if (convPriority === "any")    { w.conv -= 0.05; w.apy += 0.05; }
+  return w;
+}
+
+/* ════════════════════════════════════════════════════════════
+   BASIC COMPONENTS
+   ════════════════════════════════════════════════════════════ */
+const Card = ({ children, style = {}, ...rest }) => (
+  <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"22px 24px", ...style }} {...rest}>{children}</div>
+);
+const Label = ({ children, style = {} }) => (
+  <div style={{ fontSize:10, color:C.text4, fontFamily:MF, letterSpacing:1.2, fontWeight:600, textTransform:"uppercase", marginBottom:8, ...style }}>{children}</div>
+);
+const Tip = ({ text, children }) => (
+  <span className="tip-wrap">{children}<span className="tip-box">{text}</span></span>
+);
+const VenueDot = ({ venue }) => (
+  <span style={{
+    display:"inline-block", width:6, height:6, borderRadius:"50%",
+    background: venue === "CEX" ? C.coral : C.mint,
+    boxShadow: `0 0 6px ${venue === "CEX" ? C.coral : C.mint}`,
+    marginRight:6, verticalAlign:"middle",
+  }} />
+);
+
+function fmtUSD(n) {
+  if (n === Infinity) return "∞";
+  if (n >= 1e9) return "$" + (n/1e9).toFixed(1) + "B";
+  if (n >= 1e6) return "$" + (n/1e6).toFixed(1) + "M";
+  if (n >= 1e3) return "$" + (n/1e3).toFixed(0) + "K";
+  return "$" + n.toFixed(0);
+}
+
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR
+   ════════════════════════════════════════════════════════════ */
+function Sidebar({ params, setParams, onRun, loading }) {
+  const set = (k, v) => setParams({ ...params, [k]: v });
+
+  const assetBtn = (a) => (
+    <div key={a} className="btn-side" onClick={() => set("asset", a)} style={{
+      flex:1, textAlign:"center", padding:"10px 0",
+      background: params.asset === a ? "rgba(20,232,184,0.10)" : "rgba(255,255,255,0.025)",
+      border: `1px solid ${params.asset === a ? "rgba(20,232,184,0.45)" : C.border}`,
+      borderRadius:8, fontFamily:MF, fontSize:11, fontWeight:700,
+      color: params.asset === a ? C.mint : C.text2,
+    }}>{a}</div>
+  );
+
+  const venueChk = (v, label, color) => {
+    const checked = params.venues.includes(v);
+    return (
+      <div className="btn-side" onClick={() => set("venues", checked ? params.venues.filter(x => x !== v) : [...params.venues, v])} style={{
+        flex:1, padding:"10px 12px",
+        background: checked ? `${color}20` : "rgba(255,255,255,0.025)",
+        border: `1px solid ${checked ? color + "70" : C.border}`,
+        borderRadius:8,
+      }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{
+            width:14, height:14, borderRadius:3,
+            border:`1.5px solid ${checked ? color : C.text4}`,
+            background: checked ? color : "transparent",
+            display:"flex", alignItems:"center", justifyContent:"center",
+          }}>
+            {checked && <span style={{ color:"#000", fontSize:10, fontWeight:900, lineHeight:1 }}>✓</span>}
+          </div>
+          <div style={{ fontSize:12, color: checked ? C.text1 : C.text2, fontWeight:600 }}>{label}</div>
+        </div>
+      </div>
+    );
+  };
+
+  const knobOpt = (key, val, label, sub) => (
+    <div className="knob" onClick={() => set(key, val)} style={{
+      flex:1, padding:"10px 8px",
+      background: params[key] === val ? "rgba(20,232,184,0.08)" : "rgba(255,255,255,0.02)",
+      border: `1px solid ${params[key] === val ? "rgba(20,232,184,0.4)" : C.border}`,
+      borderRadius:6, textAlign:"center",
+    }}>
+      <div style={{ fontSize:11, fontWeight:700, color: params[key] === val ? C.mint : C.text2 }}>{label}</div>
+      <div style={{ fontSize:9, fontFamily:MF, color:C.text4, marginTop:2 }}>{sub}</div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      width:268, minWidth:268, height:"100vh", background:C.bg2,
+      borderRight:`1px solid ${C.border}`, padding:"22px 20px",
+      display:"flex", flexDirection:"column", position:"sticky", top:0,
+    }}>
+      {/* Logo */}
+      <div style={{ marginBottom:24 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+          <div style={{
+            width:32, height:32, borderRadius:8,
+            background:`linear-gradient(135deg, ${C.mint} 0%, #0c9c7e 100%)`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:16, color:"#03241e", fontWeight:900, fontFamily:DF,
+            boxShadow:"0 4px 14px -4px rgba(20,232,184,0.5)",
+          }}>¥</div>
+          <div>
+            <div style={{ fontSize:15, fontWeight:800, color:C.text1, letterSpacing:0.2, fontFamily:DF }}>
+              Yield Desk
+            </div>
+            <div style={{ fontSize:9, color:C.text4, fontFamily:MF, letterSpacing:0.8 }}>
+              STABLECOIN INCOME DESK
+            </div>
+          </div>
+        </div>
+        <div style={{
+          fontSize:11, color:C.text3, lineHeight:1.6,
+          padding:"10px 12px", background:"rgba(20,232,184,0.04)",
+          borderLeft:`2px solid ${C.mint}`, borderRadius:"0 6px 6px 0",
+        }}>
+          CEX 与 DeFi 同屏混排<br/>
+          看清你稳定币的<span style={{ color:C.mint, fontWeight:600 }}>真实机会成本</span>
+        </div>
+      </div>
+
+      <Label>资产 · asset</Label>
+      <div style={{ display:"flex", gap:6, marginBottom:18 }}>
+        {["USDT","USDC","DAI","FDUSD"].map(assetBtn)}
+      </div>
+
+      <Label>平台类型 · venue</Label>
+      <div style={{ display:"flex", gap:6, marginBottom:18 }}>
+        {venueChk("CEX","CEX 理财", C.coral)}
+        {venueChk("DeFi","DeFi 协议", C.mint)}
+      </div>
+
+      <Label>本金 · amount</Label>
+      <div style={{
+        display:"flex", alignItems:"center",
+        background:"rgba(255,255,255,0.025)",
+        border:`1px solid ${C.border}`, borderRadius:8,
+        padding:"8px 12px", marginBottom:18,
+      }}>
+        <input type="text" value={params.amount.toLocaleString()}
+          onChange={(e) => set("amount", parseInt(e.target.value.replace(/[^\d]/g,"")) || 0)}
+          style={{ flex:1, background:"transparent", border:"none", outline:"none", color:C.text1, fontFamily:MF, fontSize:14, fontWeight:600 }}
+        />
+        <div style={{ fontSize:10, color:C.text4, fontFamily:MF, fontWeight:600 }}>{params.asset}</div>
+      </div>
+
+      <Label>安全优先级 · safety</Label>
+      <div style={{ display:"flex", gap:6, marginBottom:16 }}>
+        {knobOpt("secPriority","tier1","严格","Tier-1")}
+        {knobOpt("secPriority","balanced","平衡","头部+")}
+        {knobOpt("secPriority","loose","宽松","不限")}
+      </div>
+
+      <Label>便利性要求 · liquidity</Label>
+      <div style={{ display:"flex", gap:6, marginBottom:16 }}>
+        {knobOpt("convPriority","flex","活期","T+0")}
+        {knobOpt("convPriority","balanced","平衡","≤30天")}
+        {knobOpt("convPriority","any","不限","锁仓OK")}
+      </div>
+
+      <Label>KYC 容忍 · kyc</Label>
+      <div style={{ display:"flex", gap:6, marginBottom:22 }}>
+        {knobOpt("kyc","none","免 KYC","")}
+        {knobOpt("kyc","basic","基础","")}
+        {knobOpt("kyc","any","不限","")}
+      </div>
+
+      <div style={{ flex:1, minHeight:16 }} />
+
+      <button className="run-btn" onClick={onRun} disabled={loading} style={{
+        background:`linear-gradient(135deg, ${C.mint} 0%, #0c9c7e 100%)`,
+        border:"none", borderRadius:10, padding:"13px 16px",
+        color:"#03241e", fontSize:13, fontWeight:800, letterSpacing:0.4, fontFamily:SF,
+        boxShadow:"0 4px 14px -4px rgba(20,232,184,0.45)", marginBottom:12,
+      }}>{loading ? "扫描收益池..." : "▶ 帮我找最划算的"}</button>
+
+      <div style={{ fontSize:9, color:C.text4, lineHeight:1.6, fontFamily:MF }}>
+        DATA: DefiLlama · Binance Earn · OKX · Bybit · Bitget · KuCoin · Gate · HTX
+        <br/>via Antseer.ai
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   LOADING
+   ════════════════════════════════════════════════════════════ */
+function LoadingPanel({ progress, step }) {
+  const steps = [
+    "拉取 8 家 CEX 理财产品...",
+    "从 DefiLlama 同步 500+ DeFi 池...",
+    "计算 30 日真实 APY 与稳定性...",
+    "更新平台信用与储备金状态...",
+    "按你的安全/便利偏好加权评分...",
+    "生成排行与对比视图...",
+  ];
+  return (
+    <div style={{ padding:"120px 60px", textAlign:"center" }}>
+      <div style={{
+        fontSize:48, marginBottom:20, color:C.mint, fontFamily:DF, fontWeight:800,
+        animation:"pulse 1.6s ease-in-out infinite",
+      }}>¥</div>
+      <div style={{ fontSize:16, color:C.text1, fontWeight:600, marginBottom:6, fontFamily:DF }}>Scanning yield universe</div>
+      <div style={{ fontSize:11, color:C.text4, fontFamily:MF, letterSpacing:0.5, marginBottom:28 }}>
+        SCANNING · {Math.round(progress)}%
+      </div>
+      <div style={{ maxWidth:380, margin:"0 auto", height:3, background:"rgba(255,255,255,0.06)", borderRadius:2, overflow:"hidden" }}>
+        <div style={{ height:"100%", width:`${progress}%`, background:`linear-gradient(90deg, ${C.mint}, ${C.yl})`, transition:"width 0.3s ease" }} />
+      </div>
+      <div style={{ marginTop:24, minHeight:60 }}>
+        {steps.slice(0, step + 1).map((s, i) => (
+          <div key={i} style={{
+            fontSize:11, color: i === step ? C.mint : C.text4,
+            fontFamily:MF, marginBottom:4, animation:"fadeUp 0.3s ease",
+          }}>
+            {i < step ? "✓" : "›"} {s}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRODUCT ROW (with checkbox + multi-dim)
+   ════════════════════════════════════════════════════════════ */
+function ProductRow({ p, score, rank, selected, onToggle, principal }) {
+  const venueColor = p.venue === "CEX" ? C.coral : C.mint;
+  const apy = p.apy.toFixed(1);
+  const annualYield = principal * p.apy / 100;
+
+  // 便利标签
+  let convLabel, convColor;
+  if (p.type === "flexible") { convLabel = "活期 T+0"; convColor = C.mint; }
+  else { convLabel = `锁 ${p.lockDays}天`; convColor = C.yl; }
+
+  // 容量标签
+  let capLabel = p.capacity === Infinity ? "充足" : fmtUSD(p.capacity);
+
+  // 安全等级
+  const secLabel = p.secScore >= 90 ? "顶级" : p.secScore >= 80 ? "优良" : p.secScore >= 70 ? "中等" : "一般";
+  const secColor = p.secScore >= 90 ? C.mint : p.secScore >= 80 ? "#9be4cd" : p.secScore >= 70 ? C.yl : C.coral;
+
+  // 稳定性
+  const stabPct = 100 - Math.min((p.apy30dStd / Math.max(p.apy30dAvg,0.1)) * 100, 100);
+
+  return (
+    <div className={`row-card ${selected ? "selected" : ""}`} onClick={onToggle} style={{
+      display:"grid",
+      gridTemplateColumns:"32px 36px 1fr 90px 84px 84px 84px 64px",
+      gap:14, alignItems:"center", padding:"16px 18px",
+      background: rank === 1 ? "linear-gradient(90deg, rgba(20,232,184,0.05) 0%, rgba(20,232,184,0.01) 60%, transparent 100%)" : C.card,
+      border:`1px solid ${rank === 1 ? "rgba(20,232,184,0.3)" : C.border}`,
+      borderRadius:12, marginBottom:8,
+      animation:`fadeUp 0.4s ease ${rank * 0.05}s both`,
+    }}>
+      {/* checkbox */}
+      <input type="checkbox" className="mint" checked={selected} onChange={() => {}} onClick={(e) => e.stopPropagation()} />
+
+      {/* rank */}
+      <div style={{
+        fontFamily:DF, fontStyle:"italic", fontWeight:700, fontSize:24,
+        color: rank === 1 ? C.mint : C.text4, lineHeight:1, textAlign:"center",
+      }}>{rank}</div>
+
+      {/* product main */}
+      <div>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+          <VenueDot venue={p.venue} />
+          <div style={{ fontSize:10, color:venueColor, fontFamily:MF, fontWeight:700, letterSpacing:0.5 }}>{p.venue}</div>
+          <div style={{ fontSize:9, color:C.text4, fontFamily:MF }}>·</div>
+          <div style={{ fontSize:10, color:C.text4, fontFamily:MF, fontWeight:600 }}>
+            {p.tier === 1 ? "TIER 1" : "TIER 2"}
+          </div>
+          {p.chain && <>
+            <div style={{ fontSize:9, color:C.text4 }}>·</div>
+            <div style={{ fontSize:10, color:C.text3, fontFamily:MF }}>{p.chain}</div>
+          </>}
+        </div>
+        <div style={{ fontSize:14, fontWeight:700, color:C.text1, marginBottom:2 }}>
+          {p.platform} <span style={{ color:C.text3, fontWeight:500 }}>· {p.product}</span>
+        </div>
+        <div style={{ fontSize:10, color:C.text4 }}>{p.source} · {p.why.slice(0, 38)}{p.why.length > 38 ? "..." : ""}</div>
+      </div>
+
+      {/* APY */}
+      <div>
+        <div style={{ fontSize:20, fontWeight:800, fontFamily:MF, color:C.mint, lineHeight:1 }}>{apy}<span style={{ fontSize:11, color:C.text3 }}>%</span></div>
+        <div style={{ fontSize:9, color:C.text4, fontFamily:MF, marginTop:3 }}>
+          σ{(p.apy30dStd).toFixed(1)} · 30D
+        </div>
+      </div>
+
+      {/* 便利 */}
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:11, fontWeight:700, color:convColor, fontFamily:MF }}>{convLabel}</div>
+        <div style={{ fontSize:9, color:C.text4, fontFamily:MF, marginTop:3 }}>
+          赎回 {p.redeemH < 1 ? "<1h" : p.redeemH + "h"}
+        </div>
+      </div>
+
+      {/* 安全 */}
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:11, fontWeight:700, color:secColor, fontFamily:MF }}>{secLabel}</div>
+        <div style={{ fontSize:9, color:C.text4, fontFamily:MF, marginTop:3 }}>
+          {p.secScore} · {p.audits.length}审
+        </div>
+      </div>
+
+      {/* 容量 */}
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:11, fontWeight:700, color: p.capacity === Infinity ? C.mint : C.yl, fontFamily:MF }}>
+          {capLabel}
+        </div>
+        <div style={{ fontSize:9, color:C.text4, fontFamily:MF, marginTop:3 }}>
+          TVL {fmtUSD(p.tvl)}
+        </div>
+      </div>
+
+      {/* score */}
+      <div style={{ textAlign:"right" }}>
+        <div style={{
+          fontSize:24, fontWeight:800, fontFamily:MF, lineHeight:1,
+          color: score >= 85 ? C.mint : score >= 70 ? C.yl : C.text2,
+        }}>{score}</div>
+        <div style={{ fontSize:8, color:C.text4, fontFamily:MF, letterSpacing:1, marginTop:3 }}>SCORE</div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   HERO — TOP 1 BIG CARD + Headline
+   ════════════════════════════════════════════════════════════ */
+function HeroTop({ topProduct, topScore, principal, totalCount, ctx }) {
+  const annualYield = principal * topProduct.apy / 100;
+  const venueColor = topProduct.venue === "CEX" ? C.coral : C.mint;
+
+  return (
+    <div style={{
+      display:"grid", gridTemplateColumns:"1.4fr 1fr", gap:14, marginBottom:14,
+      animation:"fadeUp 0.5s ease both",
+    }}>
+      {/* Headline / TOP 1 */}
+      <div style={{
+        background: "linear-gradient(135deg, rgba(20,232,184,0.09) 0%, rgba(20,232,184,0.02) 50%, transparent 100%)",
+        border: "1px solid rgba(20,232,184,0.3)",
+        borderRadius:14, padding:"24px 28px", position:"relative", overflow:"hidden",
+      }}>
+        {/* decorative */}
+        <div style={{
+          position:"absolute", top:-40, right:-40, width:200, height:200,
+          background:"radial-gradient(circle, rgba(20,232,184,0.1) 0%, transparent 70%)",
+          pointerEvents:"none",
+        }} />
+
+        <div style={{
+          display:"flex", alignItems:"center", gap:8, marginBottom:14,
+          fontSize:9, fontFamily:MF, letterSpacing:1.5, color:C.mint, fontWeight:700,
+        }}>
+          ⸻ TODAY'S BEST PICK ⸻
+        </div>
+
+        <div style={{ display:"flex", alignItems:"baseline", gap:12, marginBottom:6 }}>
+          <VenueDot venue={topProduct.venue} />
+          <div style={{ fontSize:10, color:venueColor, fontFamily:MF, fontWeight:700, letterSpacing:0.5 }}>
+            {topProduct.venue} · TIER {topProduct.tier}
+          </div>
+          {topProduct.chain && (
+            <div style={{ fontSize:10, color:C.text4, fontFamily:MF }}>· {topProduct.chain}</div>
+          )}
+        </div>
+
+        <div style={{
+          fontSize:32, fontFamily:DF, fontWeight:700, color:C.text1,
+          letterSpacing:-0.5, lineHeight:1.15, marginBottom:4,
+        }}>
+          {topProduct.platform}
+        </div>
+        <div style={{ fontSize:14, color:C.text3, marginBottom:18, fontFamily:DF, fontStyle:"italic" }}>
+          {topProduct.product}
+        </div>
+
+        <div style={{
+          fontSize:13, color:C.text2, lineHeight:1.75,
+          padding:"14px 18px", background:"rgba(0,0,0,0.25)",
+          borderLeft:`2px solid ${C.mint}`, borderRadius:"0 8px 8px 0",
+          marginBottom:18,
+        }}>
+          <span style={{ color:C.mint, fontWeight:700, marginRight:6 }}>·</span>{topProduct.why}
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:12 }}>
+          {[
+            { label:"APY", value: topProduct.apy.toFixed(1) + "%", color:C.mint },
+            { label:"产品类型", value: topProduct.type === "flexible" ? "活期" : `锁${topProduct.lockDays}天`, color: topProduct.type === "flexible" ? C.mint : C.yl },
+            { label:"安全分", value: topProduct.secScore, color: topProduct.secScore >= 90 ? C.mint : C.yl },
+            { label:"综合分", value: topScore, color: C.text1, big:true },
+          ].map((k, i) => (
+            <div key={i} style={{
+              padding:"10px 12px", background:"rgba(255,255,255,0.025)",
+              border:`1px solid ${C.border}`, borderRadius:8,
+            }}>
+              <div style={{ fontSize:9, color:C.text4, fontFamily:MF, letterSpacing:0.8, marginBottom:4 }}>{k.label}</div>
+              <div style={{ fontSize: k.big ? 22 : 18, fontWeight:800, fontFamily:MF, color:k.color, lineHeight:1 }}>{k.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats panel */}
+      <Card style={{ padding:"24px 26px", display:"flex", flexDirection:"column" }}>
+        <div style={{ fontSize:9, fontFamily:MF, letterSpacing:1.5, color:C.text4, fontWeight:700, marginBottom:14 }}>
+          ⸻ YOUR SCAN RESULT ⸻
+        </div>
+
+        <div style={{
+          fontSize:48, fontFamily:DF, fontWeight:700, color:C.text1, lineHeight:1, marginBottom:6,
+        }}>{totalCount}</div>
+        <div style={{ fontSize:11, color:C.text3, marginBottom:20 }}>
+          个产品符合你的筛选条件 · 来自 <b style={{ color:C.text2 }}>{ctx.venueCount}</b> 个平台
+        </div>
+
+        <div style={{ height:1, background:C.divider, marginBottom:18 }} />
+
+        <div style={{ fontSize:10, color:C.text4, fontFamily:MF, letterSpacing:0.8, marginBottom:8 }}>
+          按你的本金 ${(principal/1000).toFixed(0)}K 计算·年化收入
+        </div>
+        <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:18 }}>
+          <div style={{ fontSize:32, fontFamily:DF, fontWeight:700, color:C.mint, lineHeight:1 }}>
+            ${annualYield.toLocaleString(undefined, { maximumFractionDigits:0 })}
+          </div>
+          <div style={{ fontSize:12, color:C.text3, fontFamily:MF }}>/ year</div>
+        </div>
+
+        <div style={{ flex:1 }} />
+
+        <div style={{
+          fontSize:10, color:C.text3, fontFamily:MF, lineHeight:1.7,
+          padding:"10px 12px", background:"rgba(255,138,101,0.04)",
+          border:"1px solid rgba(255,138,101,0.18)", borderRadius:6,
+        }}>
+          <b style={{ color:C.coral }}>机会成本提示·</b> 当前 TOP 1 比稳定币活期市场均值 5.2% 高出 <b style={{ color:C.coral }}>{(topProduct.apy - 5.2).toFixed(1)}%</b>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   RADAR COMPARE
+   ════════════════════════════════════════════════════════════ */
+function RadarCompare({ products, scores }) {
+  const ref = useRef(null);
+  const [width, setWidth] = useState(600);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) setWidth(e.contentRect.width);
+    });
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!ref.current || width < 100 || products.length === 0) return;
+    const svg = d3.select(ref.current).select("svg");
+    svg.selectAll("*").remove();
+
+    const W = width, H = 360;
+    svg.attr("width", W).attr("height", H);
+
+    const cx = W / 2, cy = H / 2;
+    const radius = Math.min(W, H) / 2 - 60;
+
+    const axes = [
+      { key:"apy",  label:"收益 APY",   max:15 },
+      { key:"sec",  label:"安全性",     max:100 },
+      { key:"conv", label:"便利性",     max:100 },
+      { key:"cap",  label:"容量",       max:100 },
+      { key:"stab", label:"稳定性",     max:100 },
+    ];
+    const N = axes.length;
+    const angle = (i) => (Math.PI * 2 * i / N) - Math.PI / 2;
+
+    const g = svg.append("g").attr("transform", `translate(${cx},${cy})`);
+
+    // 网格
+    [0.2, 0.4, 0.6, 0.8, 1].forEach((r, i) => {
+      const pts = axes.map((_, j) => {
+        const a = angle(j);
+        return [Math.cos(a) * radius * r, Math.sin(a) * radius * r];
+      });
+      g.append("path")
+        .attr("d", "M" + pts.map(p => p.join(",")).join("L") + "Z")
+        .attr("fill", i === 4 ? "rgba(255,255,255,0.012)" : "none")
+        .attr("stroke", C.divider).attr("stroke-width", 0.8);
+    });
+
+    // 轴
+    axes.forEach((ax, i) => {
+      const a = angle(i);
+      const x2 = Math.cos(a) * radius;
+      const y2 = Math.sin(a) * radius;
+      g.append("line").attr("x1", 0).attr("y1", 0).attr("x2", x2).attr("y2", y2)
+        .attr("stroke", C.text5).attr("stroke-width", 0.6);
+      // 标签
+      const lx = Math.cos(a) * (radius + 22);
+      const ly = Math.sin(a) * (radius + 22);
+      g.append("text").attr("x", lx).attr("y", ly + 4).attr("text-anchor", "middle")
+        .attr("fill", C.text3).attr("font-size", 10).attr("font-family", MF).attr("font-weight", 600)
+        .text(ax.label);
+    });
+
+    // 各产品多边形
+    const colors = [C.mint, C.coral, "#9b9eff", C.yl];
+    products.forEach((p, idx) => {
+      const stab = Math.max(0, 100 - (p.apy30dStd / Math.max(p.apy30dAvg, 0.1)) * 100);
+      const conv = p.type === "flexible" && p.redeemH < 1 ? 100 :
+                   p.type === "flexible" ? 85 :
+                   p.lockDays <= 7 ? 75 : p.lockDays <= 30 ? 55 : 30;
+      const cap = p.capacity === Infinity ? 100 : Math.min(p.capacity / 1e7, 1) * 100;
+      const values = {
+        apy: Math.min(p.apy / 15, 1),
+        sec: p.secScore / 100,
+        conv: conv / 100,
+        cap: cap / 100,
+        stab: stab / 100,
+      };
+      const pts = axes.map((ax, i) => {
+        const a = angle(i);
+        const v = values[ax.key];
+        return [Math.cos(a) * radius * v, Math.sin(a) * radius * v];
+      });
+      const col = colors[idx % colors.length];
+      g.append("path")
+        .attr("d", "M" + pts.map(p => p.join(",")).join("L") + "Z")
+        .attr("fill", col).attr("fill-opacity", 0.10)
+        .attr("stroke", col).attr("stroke-width", 1.6);
+      pts.forEach(pt => {
+        g.append("circle").attr("cx", pt[0]).attr("cy", pt[1]).attr("r", 3).attr("fill", col);
+      });
+    });
+  }, [width, products]);
+
+  const colors = [C.mint, C.coral, "#9b9eff", C.yl];
+
+  return (
+    <Card style={{ animation:"fadeUp 0.5s ease 0.6s both" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+        <div>
+          <div style={{ fontSize:13, color:C.text1, fontWeight:700, marginBottom:4 }}>多维对比 · Radar</div>
+          <div style={{ fontSize:10, color:C.text4, fontFamily:MF }}>
+            勾选左侧任意行加入对比 · 最多 4 个 · 当前 {products.length}/4
+          </div>
+        </div>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1.2fr 1fr", gap:20 }}>
+        <div ref={ref} style={{ width:"100%" }}><svg /></div>
+        <div style={{ paddingLeft:12 }}>
+          <div style={{ fontSize:10, color:C.text4, fontFamily:MF, letterSpacing:1, marginBottom:12 }}>SELECTED PRODUCTS</div>
+          {products.length === 0 && (
+            <div style={{ fontSize:11, color:C.text4, padding:"24px 0" }}>
+              点击左侧产品行的复选框，选 2-4 个加入对比
+            </div>
+          )}
+          {products.map((p, i) => (
+            <div key={p.id} style={{
+              display:"flex", alignItems:"center", gap:10,
+              padding:"10px 12px", marginBottom:6,
+              background:"rgba(255,255,255,0.02)",
+              border:`1px solid ${colors[i]}40`, borderLeft:`3px solid ${colors[i]}`,
+              borderRadius:"0 6px 6px 0",
+            }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.text1 }}>{p.platform}</div>
+                <div style={{ fontSize:10, color:C.text4 }}>{p.product}</div>
+              </div>
+              <div style={{
+                fontSize:14, fontWeight:800, fontFamily:MF, color:colors[i],
+              }}>{scores[p.id]}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   TRUST LAYER
+   ════════════════════════════════════════════════════════════ */
+function TrustLayer({ products }) {
+  const [openRaw, setOpenRaw] = useState(false);
+  const sample = products.slice(0, 3).map(p => ({
+    id:p.id, venue:p.venue, platform:p.platform, asset:p.asset, chain:p.chain,
+    apy:p.apy, apy_30d_avg:p.apy30dAvg, apy_30d_std:p.apy30dStd,
+    type:p.type, lock_days:p.lockDays, redeem_hours:p.redeemH,
+    tvl_usd:p.tvl, capacity_usd: p.capacity === Infinity ? null : p.capacity,
+    audits:p.audits, has_insurance:p.insurance, has_por:p.por, security_score:p.secScore,
+  }));
+
+  return (
+    <Card style={{ animation:"fadeUp 0.5s ease 0.7s both" }}>
+      <div style={{ fontSize:13, color:C.text1, fontWeight:700, marginBottom:16 }}>方法论与数据可靠性</div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:18 }}>
+        <div style={{ padding:"14px 16px", background:"rgba(20,232,184,0.04)", borderLeft:`2px solid ${C.mint}`, borderRadius:"0 6px 6px 0" }}>
+          <div style={{ fontSize:11, color:C.mint, fontWeight:700, marginBottom:6 }}>综合分计算</div>
+          <div style={{ fontSize:10, color:C.text3, lineHeight:1.7 }}>
+            APY × 0.35 + 安全 × 0.25 + 便利 × 0.20 + 容量 × 0.10 + 稳定 × 0.10
+            <br/>权重随你的左侧"安全/便利"旋钮动态变化
+          </div>
+        </div>
+        <div style={{ padding:"14px 16px", background:"rgba(255,138,101,0.04)", borderLeft:`2px solid ${C.coral}`, borderRadius:"0 6px 6px 0" }}>
+          <div style={{ fontSize:11, color:C.coral, fontWeight:700, marginBottom:6 }}>CEX 风险</div>
+          <div style={{ fontSize:10, color:C.text3, lineHeight:1.7 }}>
+            托管型理财存在平台破产/挪用风险。优先选择有储备金证明 (PoR) 的 Tier-1 平台。
+          </div>
+        </div>
+        <div style={{ padding:"14px 16px", background:"rgba(255,91,107,0.04)", borderLeft:`2px solid ${C.red}`, borderRadius:"0 6px 6px 0" }}>
+          <div style={{ fontSize:11, color:C.red, fontWeight:700, marginBottom:6 }}>DeFi 风险</div>
+          <div style={{ fontSize:10, color:C.text3, lineHeight:1.7 }}>
+            智能合约可能被黑、Oracle 故障、稳定币脱锚。审计 ≠ 安全，需关注 TVL 流入。
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        display:"flex", alignItems:"center", justifyContent:"space-between",
+        padding:"12px 16px", background:"rgba(20,232,184,0.04)",
+        border:"1px solid rgba(20,232,184,0.15)", borderRadius:8, marginBottom:14,
+      }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ display:"flex", gap:3 }}>
+            {[1,2,3].map(i => <span key={i} style={{
+              width:7, height:7, borderRadius:"50%", background:C.mint, boxShadow:`0 0 6px ${C.mint}`,
+            }}/>)}
+          </div>
+          <div style={{ fontSize:11, color:C.text2 }}>
+            <b style={{ color:C.mint }}>3 源验证</b> · DefiLlama Yields · CEX Earn API · CryptoQuant 储备证明
+          </div>
+        </div>
+        <div style={{ fontSize:9, fontFamily:MF, color:C.text4 }}>
+          <span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:C.mint, marginRight:6, animation:"pulse 2s infinite" }} />
+          UPDATED 5 MIN AGO
+        </div>
+      </div>
+
+      <div className="fold-btn" onClick={() => setOpenRaw(!openRaw)} style={{
+        fontSize:11, color:C.text3, fontFamily:MF, fontWeight:600,
+        padding:"8px 0", display:"flex", alignItems:"center", gap:6,
+      }}>
+        <span style={{ transform: openRaw ? "rotate(90deg)" : "rotate(0)", transition:"transform .15s" }}>▶</span>
+        VIEW RAW PRODUCT JSON (top 3)
+      </div>
+      {openRaw && (
+        <pre style={{
+          background:"rgba(0,0,0,0.4)", padding:"16px 18px", borderRadius:8,
+          fontFamily:MF, fontSize:10, color:C.text3, lineHeight:1.7,
+          overflow:"auto", maxHeight:320, border:`1px solid ${C.border}`, marginTop:8,
+        }}>{JSON.stringify(sample, null, 2)}</pre>
+      )}
+    </Card>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   MAIN
+   ════════════════════════════════════════════════════════════ */
+function App() {
+  const [params, setParams] = useState({
+    asset:"USDC",
+    venues:["CEX","DeFi"],
+    amount:100000,
+    secPriority:"balanced",
+    convPriority:"balanced",
+    kyc:"basic",
+  });
+  const [executed, setExecuted] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [step, setStep]         = useState(0);
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  // 筛选 + 评分
+  const { ranked, scoreMap, totalCount, venueCount } = useMemo(() => {
+    const ctx = {
+      amount: params.amount,
+      weights: getWeights(params.secPriority, params.convPriority),
+    };
+    const filtered = PRODUCTS.filter(p => params.venues.includes(p.venue));
+    const scored = filtered.map(p => ({ ...p, _score: computeScore(p, ctx) }));
+    scored.sort((a, b) => b._score - a._score);
+    const sm = {};
+    scored.forEach(p => sm[p.id] = p._score);
+    const venues = new Set(scored.map(p => p.platform));
+    return { ranked: scored, scoreMap: sm, totalCount: scored.length, venueCount: venues.size };
+  }, [params]);
+
+  // 默认选 TOP 3 入对比
+  useEffect(() => {
+    if (executed && ranked.length > 0 && selectedIds.length === 0) {
+      setSelectedIds(ranked.slice(0, 3).map(p => p.id));
+    }
+  }, [executed, ranked]);
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 4) return prev;
+      return [...prev, id];
+    });
+  };
+
+  const onRun = () => {
+    setExecuted(false); setLoading(true); setProgress(0); setStep(0);
+    setSelectedIds([]);
+    const total = 6; let s = 0;
+    const tick = setInterval(() => {
+      s++; setStep(s); setProgress((s + 1) / total * 100);
+      if (s >= total - 1) {
+        clearInterval(tick);
+        setTimeout(() => { setLoading(false); setExecuted(true); }, 500);
+      }
+    }, 380);
+  };
+
+  const selectedProducts = ranked.filter(p => selectedIds.includes(p.id));
+
+  return (
+    <>
+      <Sidebar params={params} setParams={setParams} onRun={onRun} loading={loading} />
+      <div style={{ flex:1, padding:"24px 32px 60px", background:C.bg, overflow:"auto" }}>
+
+        {/* status bar */}
+        <div style={{
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          marginBottom:24, padding:"10px 16px",
+          background:C.card, border:`1px solid ${C.border}`, borderRadius:8,
+        }}>
+          <div style={{ display:"flex", alignItems:"center", gap:14, fontSize:11, fontFamily:MF }}>
+            <span style={{ color: executed ? C.mint : C.text4 }}>
+              {executed ? "● [ok] 扫描完成" : loading ? "● 扫描中" : "○ 待执行"}
+            </span>
+            {executed && <>
+              <span style={{ color:C.text4 }}>·</span>
+              <span style={{ color:C.text3 }}>{totalCount} 个产品</span>
+              <span style={{ color:C.text4 }}>·</span>
+              <span style={{ color:C.text3 }}>{venueCount} 个平台</span>
+              <span style={{ color:C.text4 }}>·</span>
+              <span style={{ color:C.text3 }}>3.1s</span>
+            </>}
+          </div>
+          <div style={{ display:"flex", gap:14, fontSize:11, fontFamily:MF, color:C.text3 }}>
+            <span><VenueDot venue="CEX" />CEX</span>
+            <span><VenueDot venue="DeFi" />DeFi</span>
+          </div>
+        </div>
+
+        {/* empty state */}
+        {!executed && !loading && (
+          <div style={{ padding:"120px 60px", textAlign:"center" }}>
+            <div style={{ fontSize:64, color:C.mint, fontFamily:DF, fontWeight:800, opacity:0.4, marginBottom:16, lineHeight:1 }}>¥</div>
+            <div style={{ fontSize:20, color:C.text2, fontWeight:600, marginBottom:8, fontFamily:DF, fontStyle:"italic" }}>
+              Where should your stablecoins sleep tonight?
+            </div>
+            <div style={{ fontSize:12, color:C.text4 }}>
+              在左侧设定你的偏好，我会同时扫描 8 家 CEX 与 500+ DeFi 协议，帮你找出综合分最高的去处
+            </div>
+          </div>
+        )}
+
+        {loading && <LoadingPanel progress={progress} step={step} />}
+
+        {executed && !loading && ranked.length > 0 && (
+          <>
+            {/* HERO */}
+            <HeroTop
+              topProduct={ranked[0]}
+              topScore={ranked[0]._score}
+              principal={params.amount}
+              totalCount={totalCount}
+              ctx={{ venueCount }}
+            />
+
+            {/* Section header */}
+            <div style={{
+              display:"flex", alignItems:"center", justifyContent:"space-between",
+              marginTop:8, marginBottom:14,
+            }}>
+              <div style={{ display:"flex", alignItems:"baseline", gap:12 }}>
+                <div style={{ fontSize:18, fontFamily:DF, fontWeight:700, color:C.text1, fontStyle:"italic" }}>
+                  The Ranking
+                </div>
+                <div style={{ fontSize:11, color:C.text4, fontFamily:MF }}>
+                  · 综合排行 · 按你的偏好加权
+                </div>
+              </div>
+              <div style={{ fontSize:10, color:C.text4, fontFamily:MF, letterSpacing:0.8 }}>
+                选 {selectedIds.length}/4 加入对比
+              </div>
+            </div>
+
+            {/* Header row */}
+            <div style={{
+              display:"grid",
+              gridTemplateColumns:"32px 36px 1fr 90px 84px 84px 84px 64px",
+              gap:14, padding:"0 18px 8px",
+              fontSize:9, color:C.text4, fontFamily:MF, fontWeight:700, letterSpacing:1,
+            }}>
+              <div></div>
+              <div style={{ textAlign:"center" }}>#</div>
+              <div>PRODUCT</div>
+              <div>APY</div>
+              <div style={{ textAlign:"center" }}>便利</div>
+              <div style={{ textAlign:"center" }}>安全</div>
+              <div style={{ textAlign:"center" }}>容量</div>
+              <div style={{ textAlign:"right" }}>SCORE</div>
+            </div>
+
+            {/* Product rows */}
+            <div style={{ marginBottom:14 }}>
+              {ranked.map((p, i) => (
+                <ProductRow
+                  key={p.id} p={p} score={p._score} rank={i + 1}
+                  selected={selectedIds.includes(p.id)}
+                  onToggle={() => toggleSelect(p.id)}
+                  principal={params.amount}
+                />
+              ))}
+            </div>
+
+            {/* Radar */}
+            <div style={{ marginTop:18 }}>
+              <RadarCompare products={selectedProducts} scores={scoreMap} />
+            </div>
+
+            {/* Trust */}
+            <div style={{ marginTop:14 }}>
+              <TrustLayer products={ranked} />
+            </div>
+
+            {/* footer */}
+            <div style={{
+              marginTop:24, padding:"16px 22px",
+              fontSize:10, color:C.text4, fontFamily:MF, lineHeight:1.8,
+              borderTop:`1px solid ${C.border}`,
+            }}>
+              DATA SOURCES · DefiLlama Yields · Binance Simple Earn · OKX Finance · Bybit Earn · Bitget · KuCoin · Gate.io · HTX · CryptoQuant ·
+              通过 Antseer.ai 聚合 · UPDATED {new Date().toLocaleString("zh-CN")}
+              <br/>
+              ⚠ 本工具仅供信息参考，不构成任何投资建议。APY 与剩余容量随时变化，
+              CEX 与 DeFi 均存在不同性质的风险，请在投入资金前充分了解相关风险。
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

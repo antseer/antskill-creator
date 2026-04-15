@@ -1,0 +1,7 @@
+interface:
+  display_name: "Yield Desk"
+  short_description: "Compare CEX + DeFi stablecoin yield opportunities."
+  icon_small: "./assets/yield-desk-small.svg"
+  icon_large: "./assets/yield-desk-card.svg"
+  brand_color: "#14B8A6"
+  default_prompt: "Use $yield-desk to compare stablecoin yield options across CEX and DeFi, then hand the remaining engineering work to the team."

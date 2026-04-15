@@ -1,0 +1,30 @@
+name: "seerclaw-scanner"
+display_name: "SeerClaw Scanner"
+description: "AI-driven smart contract security scanner with multi-dimensional risk assessment"
+version: "1.0.0"
+author: "Antseer"
+category: "security"
+tags:
+  - "smart-contract"
+  - "security"
+  - "audit"
+icon:
+  small: "assets/icon-small.svg"
+  card: "assets/icon-card.svg"
+paradigm: "B"
+pipeline_layers:
+  l1_data:
+    sources:
+      - "etherscan"
+      - "sourcify"
+      - "defillama"
+  l2_compute:
+    language: "python"
+  l3_decision:
+    model: "claude-sonnet-4-20250514"
+    fallback: true
+  l4_render:
+    framework: "react"
+    single_file: true
+created: "2025-03-01"
+updated: "2025-03-15"

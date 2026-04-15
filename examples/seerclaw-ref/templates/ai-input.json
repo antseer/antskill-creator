@@ -1,0 +1,32 @@
+{
+  "contract_address": "0x7d2768dE32b0b80b7a3454c06BdAc93144099e41",
+  "chain": "ethereum",
+  "contract_name": "Aave V2 LendingPool",
+  "source_available": true,
+  "analysis_results": {
+    "vulnerability_count": 2,
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 1,
+    "info": 3,
+    "patterns_matched": [
+      {"pattern": "REENTRANCY_GUARD", "found": true, "severity": "safe"},
+      {"pattern": "UNCHECKED_EXTERNAL_CALL", "found": true, "severity": "medium"},
+      {"pattern": "CENTRALIZED_OWNERSHIP", "found": false, "severity": "n/a"}
+    ],
+    "code_quality_score": 82,
+    "risk_matrix": {
+      "code_risk": 25,
+      "permission_risk": 15,
+      "dependency_risk": 35,
+      "economic_risk": 20
+    }
+  },
+  "context": {
+    "tvl_usd": 5200000000,
+    "age_days": 1200,
+    "audit_count": 8,
+    "incident_history": []
+  }
+}

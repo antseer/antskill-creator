@@ -1,0 +1,7 @@
+interface:
+  display_name: "AntSkill Creator"
+  short_description: "A staged operating system for building shareable, production-grade skill packages."
+  icon_small: "./assets/antskill-creator-small.svg"
+  icon_large: "./assets/antskill-creator-card.svg"
+  brand_color: "#7C6AEF"
+  default_prompt: "Use $antskill-creator to turn this idea/PRD/prototype into a shareable, reviewable, implementation-ready skill package."
