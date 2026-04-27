@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate an AntSkill package against the two-stage lifecycle.
+"""Validate an Skill package against the two-stage lifecycle.
 
 Stage 1 / requirement: complete product plan + mock data clearly declared.
 Stage 2 / complete: all user-path mocks replaced by verified real MCP/API/data sources.
@@ -469,7 +469,7 @@ def main() -> int:
     report = validate_package(root, stage=args.stage, run_checks=args.run_checks)
 
     if report.errors:
-        print(f"AntSkill package validation failed for stage: {report.stage}\n")
+        print(f"Skill package validation failed for stage: {report.stage}\n")
         for e in report.errors:
             print(f"- {e}")
         if report.warnings:
@@ -478,7 +478,7 @@ def main() -> int:
                 print(f"- {w}")
         return 1
 
-    print(f"AntSkill package is valid for stage: {report.stage}")
+    print(f"Skill package is valid for stage: {report.stage}")
     if report.warnings:
         print("\nWarnings:\n")
         for w in report.warnings:

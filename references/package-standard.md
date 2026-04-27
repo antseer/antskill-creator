@@ -1,4 +1,4 @@
-# AntSkill Two-Stage Package Standard
+# Skill Creator Rick Two-Stage Package Standard
 
 ## Goal
 

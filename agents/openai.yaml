@@ -1,7 +1,7 @@
 interface:
-  display_name: "AntSkill Creator"
+  display_name: "Skill Creator Rick"
   short_description: "Classify and package skills through Requirement and Complete stages."
-  icon_small: "./assets/antskill-creator-small.svg"
-  icon_large: "./assets/antskill-creator-card.svg"
+  icon_small: "./assets/skill-creator-rick-small.svg"
+  icon_large: "./assets/skill-creator-rick-card.svg"
   brand_color: "#12C48B"
-  default_prompt: "Use antskill-creator to classify, package, validate, or publish this skill."
+  default_prompt: "Use skill-creator-rick to classify, package, validate, or publish this skill."

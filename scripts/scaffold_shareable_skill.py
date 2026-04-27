@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold an AntSkill package using the two-stage lifecycle."""
+"""Scaffold an Skill package using the two-stage lifecycle."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def make_card_svg(title: str, color: str) -> str:
   <rect width="1200" height="630" rx="40" fill="#0B1020"/>
   <rect x="48" y="48" width="1104" height="534" rx="32" fill="{color}" fill-opacity="0.18" stroke="{color}" stroke-opacity="0.45"/>
   <text x="96" y="250" font-family="Arial, sans-serif" font-size="72" font-weight="700" fill="white">{safe}</text>
-  <text x="96" y="330" font-family="Arial, sans-serif" font-size="30" fill="#D1D5DB">AntSkill two-stage package</text>
+  <text x="96" y="330" font-family="Arial, sans-serif" font-size="30" fill="#D1D5DB">Skill Creator Rick two-stage package</text>
 </svg>
 '''
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-# AntSkill Creator
+# Skill Creator Rick
 
 把 skill 按两阶段生命周期推进：先做需求型，接入真实 MCP / 数据源后再变成完整型。
 
@@ -74,9 +74,9 @@
 ## 示例请求
 
 ```text
-/antskill-creator review 这个 skill，判断它处在哪个阶段
-/antskill-creator 根据这个 PRD + 原型生成 Stage 1 需求型 Skill
-/antskill-creator MCP ready 后，把这个 Stage 1 包升级到 Stage 2
-/antskill-creator 按 Stage 2 Complete 校验这个包
-/antskill-creator 把这个大 skill 拆成多个独立包
+/skill-creator-rick review 这个 skill，判断它处在哪个阶段
+/skill-creator-rick 根据这个 PRD + 原型生成 Stage 1 需求型 Skill
+/skill-creator-rick MCP ready 后，把这个 Stage 1 包升级到 Stage 2
+/skill-creator-rick 按 Stage 2 Complete 校验这个包
+/skill-creator-rick 把这个大 skill 拆成多个独立包
 ```

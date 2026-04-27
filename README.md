@@ -1,6 +1,6 @@
 <div align="center">
 
-# AntSkill Creator
+# Skill Creator Rick
 
 Move a skill through a two-stage lifecycle: Requirement Skill first, Complete Skill after real MCP/data verification.
 
@@ -74,9 +74,9 @@ This meta-skill does not require external market data. It operates on local skil
 ## Example requests
 
 ```text
-/antskill-creator review this skill and tell me which stage it is
-/antskill-creator scaffold a Stage 1 Requirement Skill from this PRD + prototype
-/antskill-creator upgrade this Stage 1 package to Stage 2 after MCP is ready
-/antskill-creator validate this package as Stage 2 Complete
-/antskill-creator split this large skill into independent packages
+/skill-creator-rick review this skill and tell me which stage it is
+/skill-creator-rick scaffold a Stage 1 Requirement Skill from this PRD + prototype
+/skill-creator-rick upgrade this Stage 1 package to Stage 2 after MCP is ready
+/skill-creator-rick validate this package as Stage 2 Complete
+/skill-creator-rick split this large skill into independent packages
 ```

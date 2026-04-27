@@ -1,6 +1,6 @@
 {
-  "id": "antskill-creator",
-  "name": "AntSkill Creator",
+  "id": "skill-creator-rick",
+  "name": "Skill Creator Rick",
   "description": "Classify, scaffold, validate, package, and publish skills through Stage 1 Requirement and Stage 2 Complete lifecycles.",
   "input_schema": {
     "zh": {

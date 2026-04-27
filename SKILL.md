@@ -1,10 +1,10 @@
 ---
-name: antskill-creator
+name: skill-creator-rick
 description: "Convert local skills through a two-stage lifecycle: Stage 1 Requirement Skill with complete product plan and mock data, then Stage 2 Complete Skill with all mock data replaced by verified real MCP/data sources."
 compatibility: filesystem, python3, git
 ---
 
-# AntSkill Creator
+# Skill Creator Rick
 
 把一个本地 skill 按 **两阶段生命周期**整理、审计、补包和发布：
 
@@ -163,13 +163,13 @@ compatibility: filesystem, python3, git
 至少执行：
 
 ```bash
-python /Users/rick/.claude/skills/antskill-creator/scripts/quick_validate.py <skill_dir>
-python /Users/rick/.claude/skills/antskill-creator/scripts/validate_shareable_skill.py <skill_dir> --stage requirement
+python /Users/rick/.claude/skills/skill-creator-rick/scripts/quick_validate.py <skill_dir>
+python /Users/rick/.claude/skills/skill-creator-rick/scripts/validate_shareable_skill.py <skill_dir> --stage requirement
 # 或
-python /Users/rick/.claude/skills/antskill-creator/scripts/validate_shareable_skill.py <skill_dir> --stage complete
+python /Users/rick/.claude/skills/skill-creator-rick/scripts/validate_shareable_skill.py <skill_dir> --stage complete
 # Stage 2 如果提供 validation.checks.json，执行真实检查：
-python /Users/rick/.claude/skills/antskill-creator/scripts/validate_shareable_skill.py <skill_dir> --stage complete --run-checks
-python /Users/rick/.claude/skills/antskill-creator/scripts/audit_skill.py <skill_dir> --stage complete --run-checks --format markdown
+python /Users/rick/.claude/skills/skill-creator-rick/scripts/validate_shareable_skill.py <skill_dir> --stage complete --run-checks
+python /Users/rick/.claude/skills/skill-creator-rick/scripts/audit_skill.py <skill_dir> --stage complete --run-checks --format markdown
 ```
 
 如果是 Stage 2 且有测试 / MCP 连通性检查，应写入 `validation.checks.json` 并用 `--run-checks` 执行。
@@ -223,7 +223,7 @@ split 输出必须包含：
 
 格式要求见：
 
-- `/Users/rick/.claude/skills/antskill-creator/references/input-schema-standard.md`
+- `/Users/rick/.claude/skills/skill-creator-rick/references/input-schema-standard.md`
 
 最低要求：
 - 顶层必须有 `zh` / `en`

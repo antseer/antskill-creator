@@ -201,7 +201,7 @@ def audit(root: Path, stage_arg: str, run_checks: bool) -> AuditReport:
 
 
 def print_markdown(report: AuditReport) -> None:
-    print(f"# AntSkill Audit Report\n")
+    print(f"# Skill Creator Rick Audit Report\n")
     print(f"- Path: `{report.skill_path}`")
     print(f"- Stage: **{report.stage}**")
     print(f"- Score: **{report.score:.2%}**")

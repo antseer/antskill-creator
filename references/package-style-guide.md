@@ -1,4 +1,4 @@
-# AntSkill Packaging Style Guide
+# Skill Creator Rick Packaging Style Guide
 
 ## Goal
 

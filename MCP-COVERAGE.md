@@ -1,4 +1,4 @@
-# AntSkill Creator · MCP Coverage
+# Skill Creator Rick · MCP Coverage
 
 This meta-skill does not require external MCP market data. Its required data is local package content and local standards files.
 
