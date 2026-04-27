@@ -1,190 +1,246 @@
 ---
 name: antskill-creator
-description: "Operating system for designing, prototyping, specifying, packaging, reviewing, and publishing high-quality standalone skills. Use when the user wants to create a new skill, turn a PRD or prototype into a shareable skill package, split one skill into multiple packages, enforce spec-first / dual-mode architecture, or generate a GitHub-ready skill with methodology, examples, quality gates, and delivery facade."
+description: "Convert local skills through a two-stage lifecycle: Stage 1 Requirement Skill with complete product plan and mock data, then Stage 2 Complete Skill with all mock data replaced by verified real MCP/data sources."
 compatibility: filesystem, python3, git
 ---
 
-# AntSkill Creator v3.0 — Skill 工厂操作系统
+# AntSkill Creator
 
-> **本文件是 Claude 造 Skill 时的主控大脑。每次用户要求「做一个 XXX Skill」时，必须先读本文件，再按决策树执行。**
+把一个本地 skill 按 **两阶段生命周期**整理、审计、补包和发布：
 
----
+1. **Stage 1 — Requirement Skill（需求型）**：产品方案完整，前端 / 后端 / 数据源依赖讲清楚，用 mock 数据展示效果，交付研发接手。
+2. **Stage 2 — Complete Skill（完整型）**：把 Stage 1 的 mock 全部替换为真实数据源，并验证 MCP / API 能覆盖全部数据依赖，可直接安装、运行、分享。
 
-## §0 决策树 — 判断当前阶段
+## Core promise
 
-```
-用户消息 → 判断：
-├─ "做/建/创建一个 XXX Skill" → S1（需求采集）
-├─ 已有需求画布，用户说"开始/出demo" → S2（快速原型）
-├─ 已有 demo，用户给反馈/改意见 → S3（精修定稿）
-├─ 用户说"OK/定稿/出PRD" → S4（PRD 输出）
-├─ 已有 PRD，用户说"打包/出skill包" → S5（包交付）
-├─ 已有包，用户说"review/检查/对照" → S6（Skill Review）
-└─ 不确定 → 询问用户当前想做什么
-```
+这个 skill 不做“表面包装”。每次先回答三个现实问题：
 
-**每阶段结束时自动执行 `quality/gates.md` 对应门槛，🔴 项不通过则自动修复后重检，最多 3 轮。**
+1. 当前包处在 **Stage 1 需求型**，还是 **Stage 2 完整型**？
+2. 产品方案、前后端方案、数据依赖是否足够研发接手？
+3. 所有 mock 是否已经被真实 MCP / API / 数据库替换，并有验证证据？
 
----
+> `split` 是拆包动作，不是第三阶段。边界不清时，先 split，再分别进入 Stage 1 或 Stage 2。
 
-## §1 Skill 范式 — 三种形态
+## Stage model
 
-在 S1 阶段必须确定范式（默认 B）：
+### Stage 1 — Requirement Skill（需求型）
 
-| 范式 | 名称 | 产出物 | 适用场景 |
-|------|------|--------|----------|
-| **A** | 实现型 | Pipeline 代码 + 单测 + 前端 | Skill 本身就是可运行服务 |
-| **B** | 规范型（默认） | 引用文档包 + SKILL.md + 前端 Demo | 指导工程师在产品代码库实现 |
-| **C** | 双模 | A + B 合体 | 需要可运行原型 + 生产规范 |
+适用于：
+- 已有完整产品方案 / PRD / 用户流程
+- 已有前端方案或高保真 UI / HTML 原型 / 输出样式
+- 已定义后端能力、接口、数据源依赖、字段口径
+- 真实数据源尚未完全接入，当前用 mock / fixture / stub 展示效果
+- 目标是交付研发继续开发
 
-> 💡 绝大多数业务场景应选 B。A 型仅在"Skill 就是最终产品"时选用。
+核心特征：
+- 可以使用 mock 数据，但必须逐项标注
+- 必须说明每个 mock 数据项未来由哪个 MCP / API / 数据库提供
+- 必须有前端、后端、数据源依赖的工程实现信息
+- 不能声称“可直接使用 / direct-use ready / 已完整可用”
 
-详见 `methodology/paradigms.md`。
+必备交付：
+- `SKILL.md`
+- `README.md`：必须有 `Data Reality` 章节
+- `README.zh.md`：必须有 `数据真实性` 章节
+- `skill.meta.json`：如果有用户参数，必须包含标准 `input_schema`
+- `REQUIREMENT-REVIEW.md`
+- `TODO-TECH.md`
+- `TECH-INTERFACE-REQUEST.md`：列出所有真实接口 / MCP / 数据源需求
+- 产品方案：PRD / spec / 用户流 / 原型 / 前后端说明，至少一种明确文档或目录
 
----
+`Data Reality` 必须回答：
 
-## §2 6 阶段流水线
+```markdown
+## Data Reality / 数据真实性
 
-| 阶段 | 做什么 | 读取 SOP | 产出物 |
-|------|--------|----------|--------|
-| **S1** | 需求采集 + 范式选择 | `sop/s1_requirements.md` | 需求画布 |
-| **S2** | 快速原型（Mock 数据） | `sop/s2_prototype.md` | 简版 Demo HTML |
-| **S3** | 精修定稿（用户反馈） | `sop/s3_refinement.md` | 完整 Demo HTML |
-| **S4** | PRD 输出（4 层拆解） | `sop/s4_prd.md` | 引用文档包 |
-| **S5** | 包交付（元数据完整） | `sop/s5_delivery.md` | zip Skill 包 |
-| **S6** | Skill Review（gap 分析） | `sop/s6_review.md` | SKILL-REVIEW 差距报告 |
+| 数据项 | 当前状态 | 当前用途 | 需要的真实数据源 / MCP | 是否阻塞 Stage 2 |
+|---|---|---|---|---|
+| 资金费率历史数据 | Mock（硬编码 fixture） | 图表展示与回测示例 | mcp://market/funding-rate 或 GET /api/funding-rate/history | 是 |
+| BTC 价格 | Mock（随机生成） | 实时价格卡片 | mcp://market/ticker 或 WebSocket /ws/ticker | 是 |
 
-**不允许跳步。** S1 必须在 S2 之前完成，S4 必须在 Demo 定稿后执行。
-
----
-
-## §3 4 层 Pipeline 架构
-
-每个 Skill 内部都遵循 4 层分离：
-
-| 层 | 职责 | 特征 | 关键约束 |
-|----|------|------|----------|
-| **L1 数据层** | API/MCP 获取原始数据 | 有网络 I/O，可能失败 | 必须有降级策略 + 字段映射表 |
-| **L2 计算层** | 脚本做过滤/评分/排序 | 纯计算，确定性，可单测 | 每个公式写伪代码 |
-| **L3 决策层** | LLM 产出人话结论 + 洞察 | 有 Prompt + Fallback | 金字塔写作 + 风险对称 |
-| **L4 渲染层** | 数据灌进容器组件 | 纯展示，不做计算 | Props 明确定义 |
-
-详见 `prompts/layer_design_guides.md`。
-
----
-
-## §4 金字塔原则 — 一切从结论开始
-
-**用户永远在问「我该怎么做」。** Skill 必须：
-1. **Hero 区**：先给结论（TOP 推荐 + 一句话 why）
-2. **论据区**：用可视化数据证明结论
-3. **信任区**：原始数据 + 方法论 + 风险提示（可折叠）
-
-> 任何 Skill 的首屏如果不能在 3 秒内让用户理解核心信息，就是失败的。
-
----
-
-## §5 视觉差异化制度
-
-每个新 Skill 必须在 **主色 / Display 字体 / Hero 组件类型** 三个维度上与已有 Skill 不同。
-
-### 已注册表
-
-| Skill | 主色 | Display 字体 | Hero 类型 |
-|-------|------|-------------|-----------|
-| DualYield | `#d4a04a` 古铜金 | Cormorant Garamond | 排名卡 ×3 |
-| Yield Desk | `#14e8b8` 电气薄荷 | Fraunces | 大卡+统计小卡 |
-
-### 可用色池
-
-| 色值 | 名称 | 适合主题 |
-|------|------|----------|
-| `#7c6aef` | 数据紫 | 分析/研究 |
-| `#ff6b6b` | 警报红 | 风控/监控 |
-| `#4ecdc4` | 海洋青 | 社区/治理 |
-| `#ffd93d` | 信号黄 | 交易/信号 |
-| `#6bcb77` | 生长绿 | 组合/增长 |
-| `#ee6c4d` | 熔岩橙 | 热度/趋势 |
-
----
-
-## §6 Source of Truth 优先级
-
-当多个文件对同一细节有冲突时，按此顺序裁决：
-
-```
-delivery/SKILL.md（Non-negotiable Rules）
-  > docs/product/PRD.md
-    > docs/requirements/business-spec.md
-      > docs/requirements/api-spec.md
-        > docs/requirements/backend-computation.md
-          > docs/requirements/implementation-guide.md
-            > docs/requirements/ai-prompts.md
-              > docs/requirements/viz-specs.md
-                > implementation/frontend/*（仅作视觉参考）
+**重要**：当前 skill 是 Stage 1 Requirement Skill，mock 数据仅用于展示产品效果和交互逻辑，不能作为真实分析或交易依据。真实数据源需求见 `TECH-INTERFACE-REQUEST.md`。
 ```
 
-详见 `methodology/source-of-truth.md`。
+### Stage 2 — Complete Skill（完整型）
 
----
+适用于：
+- Stage 1 的 mock / fixture / stub 已全部替换为真实数据源
+- MCP / API / 数据库已经能提供全部数据依赖
+- skill 可以直接运行、调用或复用
+- 有最小运行记录、数据源验证记录、MCP 覆盖矩阵或测试证据
+- 目标是直接安装、分享、发布或真实使用
 
-## §7 文件索引
+核心特征：
+- 用户主路径不能依赖 mock / random / hardcoded 示例数据
+- 所有数据项都有真实来源、调用方式、验证时间、失败处理
+- MCP 覆盖全部必需数据依赖；若某项不用 MCP，必须说明替代真实来源
+- 可以立即安装使用，并给出运行 / 验证证据
 
-```
-antskill-creator/
-├── SKILL.md                          ← 你在这里
-├── docs/
-│   ├── product/
-│   │   └── PRD.md                    产品逻辑总说明
-│   └── standards/
-│       └── package-standard.md       包结构标准
-├── VERSION
-├── methodology/
-│   ├── core-principles.md            底层哲学
-│   ├── paradigms.md                  三种范式定义
-│   ├── source-of-truth.md            SoT 优先级机制
-│   └── responsibility-split.md       三方职责 + Retry Contract
-├── sop/
-│   ├── s1_requirements.md            需求采集
-│   ├── s2_prototype.md               快速原型
-│   ├── s3_refinement.md              精修定稿
-│   ├── s4_prd.md                     PRD 输出
-│   ├── s5_delivery.md                包交付
-│   └── s6_review.md                  Skill Review
-├── prompts/
-│   └── layer_design_guides.md        L1-L4 设计指引
-├── quality/
-│   └── gates.md                      质量门槛 + 自动评估
-├── templates/
-│   ├── skill-md-template.md          8 章节 SKILL.md 模板
-│   ├── readme-template.md            英文 README
-│   ├── readme-zh-template.md         中文 README
-│   ├── openai-yaml-template.yaml     Skill 商店元数据
-│   ├── skeleton.html                 前端 React 骨架
-│   ├── l2_compute_template.py        L2 算法骨架
-│   ├── l3_decision_template.py       L3 LLM 调用骨架
-│   ├── orchestrator_template.py      Pipeline 编排骨架
-│   ├── test_template.py              单测骨架
-│   ├── meta_template.yaml            元数据 YAML 骨架
-│   ├── references/                   PRD + requirements 模板
-│   ├── sample-templates/             AI input/output JSON
-│   ├── scripts/                      validate-ai-output.js
-│   └── assets/                       SVG 图标占位
-└── examples/
-    ├── seerclaw-ref/                  v3 规范型标杆
-    └── yield-desk-ref/               v2 实现型参考
+必备交付：
+- `SKILL.md`
+- `README.md`：必须有 `Data Sources` 和 `Validation Evidence` 章节
+- `README.zh.md`：必须有 `数据来源` 和 `验证证据` 章节
+- `skill.meta.json`：如果有用户参数，必须包含标准 `input_schema`
+- `agents/openai.yaml`
+- `VERSION`
+- `.env.example`：如需要环境变量 / 鉴权
+- `MCP-COVERAGE.md`：验证 MCP / API 是否覆盖全部数据依赖
+- 可运行逻辑 / scripts / pipeline
+- 测试或最小验证记录
+- `validation.checks.json`：如需要可执行 Stage 2 检查
+
+`Data Sources` 必须回答：
+
+```markdown
+## Data Sources / 数据来源
+
+| 数据项 | 真实来源 | MCP / API / 方法 | 最后验证时间 | 失败处理 |
+|---|---|---|---|---|
+| 资金费率历史数据 | Binance / 内部市场数据服务 | mcp://market/funding-rate | 2026-04-27 | 返回空态并提示数据不可用 |
+| BTC 实时价格 | 行情 MCP | mcp://market/ticker | 2026-04-27 | 使用最近有效值并标注延迟 |
+
+**验证状态**：用户主路径不再依赖 mock 数据；全部必需数据项已通过 `MCP-COVERAGE.md` 验证。
 ```
 
----
+## Standard workflow
 
-## §8 铁律（Non-negotiable Rules）
+### Step 1. Reality review
 
-1. **Hero 必须有结论** — 不允许 Hero 区只放输入表单
-2. **有推荐必须有风险** — 推荐段下方必须有对应风险提示
-3. **不能一键下单** — Skill 只做决策辅助，不触发交易
-4. **L2 单测必须全过** — 不允许跳过或注释掉失败用例
-5. **L3 必须有 Fallback** — LLM 不可用时用模板函数兜底
-6. **数据必须有来源标注** — 每个数据点标注 source + 更新时间
-7. **每个 Skill 视觉独立** — 主色/字体/Hero 不与已有 Skill 重复
-8. **PRD 覆盖每个像素** — 前端可见的每个元素都有计算逻辑说明
-9. **范式先于设计** — S1 必须确定范式，不允许 S2 再改
+优先看：
+- `SKILL.md`
+- README / PRD / Stage 1 implementation docs
+- frontend prototype / output UI
+- backend/data interface request
+- scripts / pipeline / tests
+- agent config / metadata
+- MCP / API 调用和验证记录
+
+先输出一句判断：
+- 这是 **Stage 1 Requirement Skill**
+- 这是 **Stage 2 Complete Skill**
+- 这是 **混合包，需要先 split**
+- 这是 **not packageable yet**（目标或输入输出不清）
+
+### Step 2. Classify by stage gate
+
+按四问判断：
+
+1. **边界**：这个包是否只解决一个清晰问题？多职责混杂 → 先 split。
+2. **产品方案**：用户流程、前端展示、后端能力、数据依赖是否讲清楚？不清楚 → not packageable yet。
+3. **mock 状态**：用户主路径是否仍依赖 mock / random / hardcoded 示例数据？是 → Stage 1。
+4. **真实数据覆盖**：所有数据依赖是否由 MCP / API / 数据库真实提供，并有验证证据？是 → Stage 2；否则 Stage 1。
+
+判断细化：
+- 生产用户路径存在 mock / fixture / stub → Stage 1
+- 测试、fixture、文档样例中存在 mock → 不自动降级，但必须标注不是用户主路径
+- 部分真实、部分 mock → Stage 1，并在 `Data Reality` 逐项标注
+- 不需要外部数据源的 skill → Stage 2 也可以成立，但 `Data Sources` 必须说明“仅使用用户输入 / 本地文件 / 仓库内容”，并给验证证据
+- MCP 不能覆盖全部必需数据项 → 不能进入 Stage 2
+
+### Step 3. Fill the right artifacts
+
+如果是 Stage 1，优先补：
+- `Data Reality / 数据真实性`
+- `REQUIREMENT-REVIEW.md`
+- `TODO-TECH.md`
+- `TECH-INTERFACE-REQUEST.md`
+- PRD / 前端方案 / 后端方案 / 数据依赖说明
+- mock / stub 边界和替换计划
+
+如果是 Stage 2，优先补：
+- `Data Sources / 数据来源`
+- `Validation Evidence / 验证证据`
+- `MCP-COVERAGE.md`
+- `README.md` / `README.zh.md`
+- `skill.meta.json`
+- `agents/openai.yaml`
+- `VERSION`
+- `.env.example`
+- 最小运行说明和测试记录
+
+### Step 4. Validate
+
+至少执行：
+
+```bash
+python /Users/rick/.claude/skills/antskill-creator/scripts/quick_validate.py <skill_dir>
+python /Users/rick/.claude/skills/antskill-creator/scripts/validate_shareable_skill.py <skill_dir> --stage requirement
+# 或
+python /Users/rick/.claude/skills/antskill-creator/scripts/validate_shareable_skill.py <skill_dir> --stage complete
+# Stage 2 如果提供 validation.checks.json，执行真实检查：
+python /Users/rick/.claude/skills/antskill-creator/scripts/validate_shareable_skill.py <skill_dir> --stage complete --run-checks
+python /Users/rick/.claude/skills/antskill-creator/scripts/audit_skill.py <skill_dir> --stage complete --run-checks --format markdown
+```
+
+如果是 Stage 2 且有测试 / MCP 连通性检查，应写入 `validation.checks.json` 并用 `--run-checks` 执行。
+
+### Step 5. Publish when asked
+
+如果用户要求上传：
+- 同步到目标仓库
+- commit / push
+- 返回链接
+- 明确说明发布的是 Stage 1 Requirement Skill 还是 Stage 2 Complete Skill
+- Stage 1 发布时必须醒目标注：mock 数据仅用于展示，不可直接用于真实分析或生产
+
+## Split rule
+
+满足任意两条，建议先 split：
+- 面向两个以上明显不同用户
+- 有两个以上独立触发场景
+- 输出物完全不同
+- 依赖完全不同的数据源 / MCP / API
+- README 里出现多个互不依赖的核心 promise
+- 一个包同时包含 Stage 1 需求文档和 Stage 2 可运行产品，但两者边界不清
+- 用户可以只安装其中一半而不影响另一半
+
+split 输出必须包含：
+
+```markdown
+## Split Plan
+
+| 子 skill | 目标用户 | 输入 | 输出 | 数据依赖 | 阶段 |
+|---|---|---|---|---|---|
+```
+
+## Non-negotiables
+
+1. 先判断阶段，再包装
+2. Stage 1 必须有完整产品方案：前端、后端、数据源依赖都要讲清楚
+3. Stage 1 必须有 `Data Reality`，标清楚哪些是 mock、未来由哪个 MCP / API / 数据源替换
+4. Stage 1 不能写成“可直接使用 / direct-use ready”
+5. Stage 2 必须把用户主路径里的 mock 全部替换为真实数据源
+6. Stage 2 必须有 `Data Sources`、`Validation Evidence`、`MCP-COVERAGE.md`
+7. Stage 2 必须验证 MCP 是否覆盖全部必需数据依赖；不能覆盖的必须说明真实替代来源
+8. 中英 README 要结构对等
+9. 不能隐瞒接口 / 数据 / MCP 覆盖缺口
+10. 如果 skill 有用户参数，`skill.meta.json > input_schema` 必须存在，且 zh/en key 完全一致
+11. split 不是阶段
+
+## input_schema standard
+
+凡是带参数的 shareable skill，参数配置一律写在 `skill.meta.json > input_schema`。
+
+格式要求见：
+
+- `/Users/rick/.claude/skills/antskill-creator/references/input-schema-standard.md`
+
+最低要求：
+- 顶层必须有 `zh` / `en`
+- 每个参数必须包含 `type` / `label` / `default` / `options` / `description` / `required`
+- `input` 的 `options` 必须是 `[]`
+- `select.default` 必须存在于 `options[].value`
+- `multiple.default` 必须是数组，且每个值存在于 `options[].value`
+- `required` 必须是 boolean
+
+## Required output contract
+
+最终汇报至少包含：
+1. 阶段判断：Stage 1 Requirement / Stage 2 Complete / 需先拆分 / not packageable yet
+2. 完成度判断
+3. 补了哪些文件
+4. 已具备哪些能力
+5. 还缺什么，尤其是 mock → MCP / 真实数据源的缺口
+6. MCP / API / 数据源覆盖是否已验证
+7. 如执行 audit，附结构化分数、缺失项和 Stage 2 blockers
+7. 是否已上传 / 发布

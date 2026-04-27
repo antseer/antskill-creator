@@ -1,0 +1,19 @@
+{
+  "checks": [
+    {
+      "name": "frontmatter validation",
+      "command": ["python", "-B", "scripts/quick_validate.py", "."],
+      "timeout_seconds": 30
+    },
+    {
+      "name": "stage complete validation",
+      "command": ["python", "-B", "scripts/validate_shareable_skill.py", ".", "--stage", "complete"],
+      "timeout_seconds": 30
+    },
+    {
+      "name": "structured audit",
+      "command": ["python", "-B", "scripts/audit_skill.py", ".", "--stage", "complete", "--format", "json"],
+      "timeout_seconds": 30
+    }
+  ]
+}

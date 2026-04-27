@@ -1,0 +1,39 @@
+<div align="center">
+
+# {{DISPLAY_NAME}}
+
+{{ONE_LINE_ZH}}
+
+[English](README.md) | 简体中文
+
+</div>
+
+> **阶段：完整型 Skill**  
+> 用户主路径中的 mock 数据已经替换为经过验证的真实 MCP / API / 数据源。
+
+## 这个 Skill 做什么
+
+- 写清楚用户最终得到什么结果。
+- 写清楚真实输入和输出契约。
+
+## 数据来源
+
+| 数据项 | 真实来源 | MCP / API / 方法 | 最后验证时间 | 失败处理 |
+|---|---|---|---|---|
+| TODO | TODO | mcp://TODO 或 API/database | YYYY-MM-DD | TODO |
+
+**验证状态**：用户主路径不再依赖 mock 数据。必需数据依赖已在 `MCP-COVERAGE.md` 中验证。
+
+## 验证证据
+
+| 检查项 | 命令 / 方法 | 结果 | 日期 |
+|---|---|---|---|
+| Frontmatter 校验 | `python quick_validate.py .` | pass | YYYY-MM-DD |
+| 分享包校验 | `python validate_shareable_skill.py . --stage complete` | pass | YYYY-MM-DD |
+| MCP 覆盖 | 见 `MCP-COVERAGE.md` | pass | YYYY-MM-DD |
+
+## 快速开始
+
+```bash
+# 替换为最小可运行命令或使用提示
+```

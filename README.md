@@ -1,135 +1,82 @@
+<div align="center">
+
 # AntSkill Creator
 
-A structured production system for moving a skill from requirements to a deliverable package.
-
-[![X](https://img.shields.io/badge/Follow-%40Antseer__ai-black?logo=x&logoColor=white)](https://x.com/Antseer_ai) [![Telegram](https://img.shields.io/badge/Telegram-AntseerGroup-2CA5E0?logo=telegram&logoColor=white)](https://t.me/AntseerGroup) [![GitHub](https://img.shields.io/badge/GitHub-antseer--dev-181717?logo=github&logoColor=white)](https://github.com/antseer-dev/OpenWeb3Data_MCP) [![Medium](https://img.shields.io/badge/Medium-antseer-000000?logo=medium&logoColor=white)](https://medium.com/@antseer/)
+Move a skill through a two-stage lifecycle: Requirement Skill first, Complete Skill after real MCP/data verification.
 
 English | [简体中文](README.zh.md)
 
----
+</div>
 
-## Core mechanisms
+## Two stages
 
-| Mechanism | Purpose | File |
-|------|------|----------|
-| Paradigm classification | Distinguishes implementation-first (A), spec-first (B), and dual-mode (C) skills, each with a different workflow | `methodology/paradigms.md` |
-| S1–S6 stage gates | Requirements → prototype → refinement → PRD → delivery → review, each with entry and exit criteria | `sop/`, `quality/gates.md` |
-| 4-layer pipeline | Separates data, compute, decision, and rendering to avoid logic coupling | `prompts/layer_design_guides.md` |
-| Source-of-truth arbitration | Defines precedence when PRD, API spec, prompts, and demo conflict | `methodology/source-of-truth.md` |
-| Production / Prototype boundary | Separates visual reference from production contract | `methodology/responsibility-split.md` |
+### Stage 1 — Requirement Skill
 
-## Repository facts
+Use this when the product plan is complete but real data integration is not finished.
 
-| Metric | Value |
-|------|------|
-| Skill paradigms | 3 |
-| SOP stages | 6 |
-| Methodology modules | 4 |
-| Reference templates | 10 |
-| Built-in example packages | 4 |
-| Yield Desk PRD | 1060 lines |
-| DualYield tests | 32/32 passed |
-| Yield Desk tests | 16/16 passed |
+Required outcome:
+- full product plan / PRD / user flow
+- frontend or output experience
+- backend capability requirements
+- data-source dependency list
+- mock-data boundary and replacement plan
+- engineering implementation docs
 
-## What changed in the standard
+The skill may use mock data, but every mock item must map to the real MCP / API / database source that will replace it.
 
-This version makes two things explicit:
+### Stage 2 — Complete Skill
 
-1. **Every serious skill must have a product PRD** that explains the complete product logic, not just scattered specs.
-2. **Requirement docs and implementation artifacts must be physically separated** so a reviewer can tell at a glance whether a package is spec-first, implementation-first, or dual-mode.
+Use this when the Stage 1 mock data has been replaced.
 
-## Standard package topology
+Required outcome:
+- user path no longer depends on mock / stub / random demo data
+- all required data dependencies are covered by MCP / API / database or explicitly marked as not requiring external data
+- `MCP-COVERAGE.md` proves coverage
+- README contains data sources and validation evidence
+- package can be installed, run, shared, or published
 
-```text
-skill-name/
-├── docs/                     # requirement-facing artifacts
-│   ├── product/PRD.md        # complete product logic (mandatory for B/C)
-│   ├── requirements/         # business/API/compute/prompt/viz/test specs
-│   ├── review/               # review and gap reports
-│   └── handoff/              # optional engineering handoff docs
-├── implementation/           # runtime-facing artifacts
-│   ├── pipeline/
-│   ├── frontend/
-│   ├── tests/
-│   └── scripts/
-├── delivery/                 # publish-facing artifacts
-│   ├── SKILL.md
-│   ├── README.md
-│   ├── README.zh.md
-│   ├── VERSION
-│   ├── agents/openai.yaml
-│   └── assets/
-└── examples/                 # optional reference packages
-```
+> `split` is a packaging action, not a third stage.
 
-## Repository structure
+## What this skill does
 
-```text
-antskill-creator/
-├── SKILL.md                  # orchestration logic and decision tree
-├── docs/                     # index + product PRD + package standard + guides
-├── methodology/              # paradigms, SoT, responsibility split
-├── sop/                      # S1–S6 stage playbooks
-├── prompts/                  # L1–L4 design guides
-├── quality/                  # gates and evaluation rules
-├── templates/                # templates, skeletons, validators
-└── examples/                 # full example packages
-```
+- classify a local skill as Stage 1 Requirement or Stage 2 Complete
+- detect when a mixed package should be split first
+- scaffold stage-specific files from maintainable templates
+- add bilingual README files, metadata, icons, and agent facade
+- generate engineering-facing MCP / API / data-source request docs
+- validate stage-specific package readiness
+- generate structured audit reports with score, missing items, and Stage 2 blockers
+- publish to GitHub when asked
 
-## Start here
+## Data Sources
 
-- Docs index: `docs/INDEX.md`
-- Quickstart: `docs/guides/quickstart.md`
-- Package standard: `docs/standards/package-standard.md`
-- Migration guide: `docs/guides/migration-guide.md`
-- Example authoring guide: `docs/guides/example-authoring-guide.md`
-- Example packages: `examples/README.md`
+This meta-skill does not require external market data. It operates on local skill files provided by the user.
 
-## Cases
+| Data item | Real source | Method | Last verified | Failure handling |
+|---|---|---|---|---|
+| Skill package files | User local filesystem | Direct file read/write | 2026-04-27 | Report missing files and required fixes |
+| Package standards | Local references in this skill | `references/*.md` | 2026-04-27 | Fall back to `SKILL.md` contract |
+| Validation rules | Local Python scripts | `scripts/quick_validate.py`, `scripts/validate_shareable_skill.py`, `scripts/audit_skill.py` | 2026-04-27 | Print validation errors and audit reports |
+| Scaffold templates | Local template files | `templates/requirement`, `templates/complete`, `templates/common` | 2026-04-27 | Fail fast if a template is missing |
+| Executable checks | Local check config | `validation.checks.json` | 2026-04-27 | Fail the Stage 2 `--run-checks` gate |
 
-### DualYield — C paradigm (dual-mode)
+## Validation Evidence
 
-Includes product spec, pipeline code, frontend prototype, tests, and technical onboarding docs. L2 tests pass 32/32.
+| Check | Command / method | Result | Date |
+|---|---|---|---|
+| Frontmatter validation | `python scripts/quick_validate.py .` | pass | 2026-04-27 |
+| Stage validator syntax | `python -m py_compile scripts/*.py` | pass | 2026-04-27 |
+| Stage 1 scaffold smoke test | generate temp requirement package then validate with `--stage requirement` | pass | 2026-04-27 |
+| Stage 2 scaffold smoke test | generate temp complete package then validate with `--stage complete` | pass with filled sample values | 2026-04-27 |
+| Executable validation gate | `python scripts/validate_shareable_skill.py . --stage complete --run-checks` | pass | 2026-04-27 |
+| Structured audit report | `python scripts/audit_skill.py . --stage complete --run-checks --format json` | pass | 2026-04-27 |
 
-Path: `examples/dualyield/`
-
-### Yield Desk — C paradigm (handoff-heavy)
-
-Includes a 1060-line layered PRD, high-fidelity frontend prototype, and engineering handoff docs. L2 tests pass 16/16.
-
-Path: `examples/yield-desk/`
-
-### SeerClaw Ref — B paradigm (spec-first)
-
-A pure reference package for scanner/analyzer-style product specs.
-
-Path: `examples/seerclaw-ref/`
-
-## Output types
-
-| Paradigm | Output |
-|------|------|
-| A — Implementation-first | pipeline code, tests, frontend demo |
-| B — Spec-first | spec docs, `SKILL.md`, frontend demo, metadata |
-| C — Dual-mode | A + B |
-
-## Usage
+## Example requests
 
 ```text
-/antskill-creator create a skill for on-chain treasury monitoring
-/antskill-creator split this large skill into scanner and analyzer
-/antskill-creator package this PRD + prototype into a GitHub-shareable skill
-/antskill-creator review this skill and produce a gap report before handoff
+/antskill-creator review this skill and tell me which stage it is
+/antskill-creator scaffold a Stage 1 Requirement Skill from this PRD + prototype
+/antskill-creator upgrade this Stage 1 package to Stage 2 after MCP is ready
+/antskill-creator validate this package as Stage 2 Complete
+/antskill-creator split this large skill into independent packages
 ```
-
-Internal flow: classify paradigm → collect requirements → prototype → refine → PRD/spec → package + review.
-
-## Best fit
-
-**Good for:** skill production that needs both product clarity and engineering implementability; teams that need end-to-end demo/PRD/package/review management; reusable skill methodology.
-
-**Not good for:** throwaway one-off skills; personal experiments that do not need review or packaging discipline.
-
----
-
-Built by [AntSeer](https://antseer.ai) · Powered by AI Agents

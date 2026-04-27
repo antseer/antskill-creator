@@ -1,135 +1,82 @@
+<div align="center">
+
 # AntSkill Creator
 
-一套将 skill 从需求推进到可交付包的结构化生产系统。
-
-[![X](https://img.shields.io/badge/%E5%85%B3%E6%B3%A8-%40Antseer__ai-black?logo=x&logoColor=white)](https://x.com/Antseer_ai) [![Telegram](https://img.shields.io/badge/Telegram-AntseerGroup-2CA5E0?logo=telegram&logoColor=white)](https://t.me/AntseerGroup) [![GitHub](https://img.shields.io/badge/GitHub-antseer--dev-181717?logo=github&logoColor=white)](https://github.com/antseer-dev/OpenWeb3Data_MCP) [![Medium](https://img.shields.io/badge/Medium-antseer-000000?logo=medium&logoColor=white)](https://medium.com/@antseer/)
+把 skill 按两阶段生命周期推进：先做需求型，接入真实 MCP / 数据源后再变成完整型。
 
 [English](README.md) | 简体中文
 
----
+</div>
 
-## 核心机制
+## 两个阶段
 
-| 机制 | 作用 | 对应文件 |
-|------|------|----------|
-| 范式分类 | 区分实现型(A)、规范型(B)、双模(C)，按类型走不同流程 | `methodology/paradigms.md` |
-| S1–S6 阶段门控 | 需求→原型→精修→PRD→交付→Review，每阶段有准入/准出标准 | `sop/`、`quality/gates.md` |
-| 4 层 Pipeline | 数据、计算、决策、渲染分离，防止逻辑耦合 | `prompts/layer_design_guides.md` |
-| Source of Truth 裁决 | PRD、API spec、prompt、Demo 冲突时的优先级规则 | `methodology/source-of-truth.md` |
-| Production / Prototype 边界 | 区分视觉参考与生产契约 | `methodology/responsibility-split.md` |
+### Stage 1 — 需求型 Skill
 
-## 数据概览
+适用于产品方案已经完整，但真实数据集成尚未完成的情况。
 
-| 指标 | 数值 |
-|------|------|
-| Skill 范式 | 3 |
-| SOP 阶段 | 6 |
-| 方法论模块 | 4 |
-| 文档模板 | 10 |
-| 内置示例包 | 4 |
-| Yield Desk PRD | 1060 行 |
-| DualYield 测试 | 32/32 通过 |
-| Yield Desk 测试 | 16/16 通过 |
+必须交付：
+- 完整产品方案 / PRD / 用户流程
+- 前端或输出体验
+- 后端能力需求
+- 数据源依赖清单
+- mock 数据边界和替换计划
+- 工程实现文档
 
-## 这版标准新增了什么
+可以使用 mock 数据，但每个 mock 数据项都必须说明未来由哪个真实 MCP / API / 数据库替换。
 
-这次标准明确补了两件事：
+### Stage 2 — 完整型 Skill
 
-1. **严肃的 skill 必须有完整 PRD**，把产品逻辑讲清楚，而不是只靠零散 spec。
-2. **需求型文档和实现型产物必须物理分层**，评审时一眼就能看出这是规范型、实现型还是双模包。
+适用于 Stage 1 的 mock 数据已经被替换之后。
 
-## 标准包结构
+必须交付：
+- 用户主路径不再依赖 mock / stub / random 演示数据
+- 全部必需数据依赖由 MCP / API / 数据库覆盖，或者明确说明不需要外部数据
+- `MCP-COVERAGE.md` 证明覆盖情况
+- README 包含数据来源和验证证据
+- package 可以安装、运行、分享或发布
 
+> `split` 是拆包动作，不是第三阶段。
+
+## 这个 skill 做什么
+
+- 判断本地 skill 是 Stage 1 需求型还是 Stage 2 完整型
+- 识别混合包是否需要先 split
+- 基于可维护模板生成阶段专属文件
+- 补双语 README、元数据、图标和 agent 门面
+- 生成给工程同学看的 MCP / API / 数据源提需文档
+- 按阶段校验 package 是否达标
+- 生成带分数、缺失项和 Stage 2 blockers 的结构化审计报告
+- 用户要求时发布到 GitHub
+
+## 数据来源
+
+这个元 skill 不需要外部行情数据。它处理的是用户本地提供的 skill 文件。
+
+| 数据项 | 真实来源 | 方法 | 最后验证时间 | 失败处理 |
+|---|---|---|---|---|
+| Skill 包文件 | 用户本地文件系统 | 直接读写文件 | 2026-04-27 | 报告缺失文件和修复项 |
+| 打包标准 | 本 skill 内置引用文档 | `references/*.md` | 2026-04-27 | 回退到 `SKILL.md` 契约 |
+| 校验规则 | 本地 Python 脚本 | `scripts/quick_validate.py`, `scripts/validate_shareable_skill.py`, `scripts/audit_skill.py` | 2026-04-27 | 输出校验错误和审计报告 |
+| 脚手架模板 | 本地模板文件 | `templates/requirement`, `templates/complete`, `templates/common` | 2026-04-27 | 模板缺失时快速失败 |
+| 可执行检查 | 本地检查配置 | `validation.checks.json` | 2026-04-27 | 使 Stage 2 `--run-checks` 闸门失败 |
+
+## 验证证据
+
+| 检查项 | 命令 / 方法 | 结果 | 日期 |
+|---|---|---|---|
+| Frontmatter 校验 | `python scripts/quick_validate.py .` | pass | 2026-04-27 |
+| 阶段校验脚本语法 | `python -m py_compile scripts/*.py` | pass | 2026-04-27 |
+| Stage 1 脚手架冒烟测试 | 生成临时需求型包，并用 `--stage requirement` 校验 | pass | 2026-04-27 |
+| Stage 2 脚手架冒烟测试 | 生成临时完整型包，并用 `--stage complete` 校验 | 填充示例值后 pass | 2026-04-27 |
+| 可执行校验闸门 | `python scripts/validate_shareable_skill.py . --stage complete --run-checks` | pass | 2026-04-27 |
+| 结构化审计报告 | `python scripts/audit_skill.py . --stage complete --run-checks --format json` | pass | 2026-04-27 |
+
+## 示例请求
+
+```text
+/antskill-creator review 这个 skill，判断它处在哪个阶段
+/antskill-creator 根据这个 PRD + 原型生成 Stage 1 需求型 Skill
+/antskill-creator MCP ready 后，把这个 Stage 1 包升级到 Stage 2
+/antskill-creator 按 Stage 2 Complete 校验这个包
+/antskill-creator 把这个大 skill 拆成多个独立包
 ```
-skill-name/
-├── docs/                     # 面向需求/规范
-│   ├── product/PRD.md        # 完整产品逻辑（B/C 必须有）
-│   ├── requirements/         # 业务/API/计算/Prompt/可视化/测试规范
-│   ├── review/               # review 和 gap 报告
-│   └── handoff/              # 可选的工程交接文档
-├── implementation/           # 面向实现/运行
-│   ├── pipeline/
-│   ├── frontend/
-│   ├── tests/
-│   └── scripts/
-├── delivery/                 # 面向发布/分发
-│   ├── SKILL.md
-│   ├── README.md
-│   ├── README.zh.md
-│   ├── VERSION
-│   ├── agents/openai.yaml
-│   └── assets/
-└── examples/                 # 可选参考包
-```
-
-## 仓库结构
-
-```
-antskill-creator/
-├── SKILL.md                  # 主控逻辑与决策树
-├── docs/                     # 索引 + 产品 PRD + 包规范 + 指南
-├── methodology/              # 范式、SoT、职责边界
-├── sop/                      # S1–S6 阶段操作手册
-├── prompts/                  # L1–L4 层设计指导
-├── quality/                  # 质量门与评估标准
-├── templates/                # 模板、骨架、校验脚本
-└── examples/                 # 完整案例包
-```
-
-## 从这里开始
-
-- 文档索引：`docs/INDEX.md`
-- 快速上手：`docs/guides/quickstart.md`
-- 包结构标准：`docs/standards/package-standard.md`
-- 迁移指南：`docs/guides/migration-guide.md`
-- 示例编写指南：`docs/guides/example-authoring-guide.md`
-- 示例包索引：`examples/README.md`
-
-## 案例
-
-### DualYield — C 范式（双模）
-
-包含产品规范、Pipeline 代码、前端原型、单测、技术 onboarding 文档。L2 测试 32/32 通过。
-
-路径：`examples/dualyield/`
-
-### Yield Desk — C 范式（偏 handoff）
-
-包含 1060 行分层 PRD、高保真前端原型、工程交接文档。L2 测试 16/16 通过。
-
-路径：`examples/yield-desk/`
-
-### SeerClaw Ref — B 范式（规范型）
-
-纯规范包，适合 scanner/analyzer 类产品参考。
-
-路径：`examples/seerclaw-ref/`
-
-## 产出类型
-
-| 范式 | 产出 |
-|------|------|
-| A — 实现型 | pipeline 代码、测试、前端 demo |
-| B — 规范型 | 规范文档、SKILL.md、前端 demo、元数据 |
-| C — 双模 | A + B |
-
-## 使用方式
-
-```
-/antskill-creator 做一个链上国库监控 skill
-/antskill-creator 把这个大 skill 拆成 scanner 和 analyzer
-/antskill-creator 把这个 PRD + 原型打包成 GitHub 可分享的 skill
-/antskill-creator review 一下这个 skill，先出 gap report 再交付
-```
-
-内部流程：判断范式 → 采集需求 → 快速原型 → 精修 → PRD/规范包 → 打包 Review。
-
-## 适用场景
-
-**适合：** 需要产品清晰度与工程可实现性兼顾的 skill 生产；需要 demo/PRD/打包/review 全链路管理；需要可复用方法论的团队协作。
-
-**不适合：** 一次性 throwaway skill；不需要 review 和规范的个人实验。
-
----
-
-Built by [AntSeer](https://antseer.ai) · Powered by AI Agents
