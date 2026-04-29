@@ -9,7 +9,7 @@ Before calling a package share-ready, confirm the right stage.
 - [ ] Stage 2 only if all user-path mock data is replaced by verified real MCP / API / database sources
 - [ ] If some data is real and some is mock, the package remains Stage 1
 
-## Stage 1 — Requirement Skill
+## Stage 1 — Semi-finished Skill
 
 - [ ] `SKILL.md` exists and validates
 - [ ] `README.md` has `Data Reality`
@@ -23,7 +23,7 @@ Before calling a package share-ready, confirm the right stage.
 - [ ] No false direct-use claim
 - [ ] If user parameters exist, `skill.meta.json > input_schema` follows the standard
 
-## Stage 2 — Complete Skill
+## Stage 2 — Finished Skill
 
 - [ ] `SKILL.md` exists and validates
 - [ ] `README.md` has `Data Sources` and `Validation Evidence`
@@ -36,7 +36,7 @@ Before calling a package share-ready, confirm the right stage.
 - [ ] `.env.example` exists if env vars / auth are needed
 - [ ] tests, evals, or minimal run evidence exists
 - [ ] `validation.checks.json` exists and passes with `--run-checks` if readiness can be checked locally
-- [ ] `scripts/audit_skill.py` shows no Stage 2 blockers before sharing as Complete
+- [ ] `scripts/audit_skill.py` shows no Stage 2 blockers before sharing as Finished
 - [ ] If user parameters exist, `skill.meta.json > input_schema` follows the standard
 
 ## Hygiene

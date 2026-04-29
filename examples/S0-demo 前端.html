@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>polymarket-drift-radar · demo-v0 · v5.1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Antseer tokens v5.1 */
+      --bg-page: #080807;
+      --bg-nav: #0a0a0a;
+      --bg-card: #1d1d1a;
+      --bg-muted: #121210;
+      --bg-accent-bg: #2a2926;
+      --fg-primary: #ffffff;
+      --fg-muted: #8a8885;
+      --border: rgba(255, 255, 255, 0.12);
+      /* semantic */
+      --success: #05df72;
+      --warning: #ffb000;
+      --info: #1196dd;
+      --danger: #f44;
+      /* v5.1 primary + accent */
+      --primary: #36dd0c;           /* 全局家族绿,所有 Skill 共用 */
+      --primary-soft: rgba(54, 221, 12, 0.15);
+      --accent: #ee6c4d;            /* 本 Skill 差异化色:熔岩橙 */
+      --accent-soft: rgba(238, 108, 77, 0.15);
+      /* radii */
+      --r-sm: 6px;
+      --r-md: 8px;
+      --r-lg: 12px;
+      --r-pill: 9999px;
+      /* fonts */
+      --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+      --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg-page); color: var(--fg-primary); font-family: var(--font-sans); font-weight: 400; font-size: 14px; line-height: 1.5; }
+    body { min-height: 100vh; position: relative; overflow-x: hidden; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* 背景辐射装饰 (v5.1) */
+    .radial-deco { position: fixed; top: 0; right: 0; width: 55vw; height: 60vh; pointer-events: none; z-index: 0; opacity: 0.9; }
+    .radial-deco svg { width: 100%; height: 100%; }
+
+    /* Nav */
+    .nav { height: 58px; background: var(--bg-nav); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; position: sticky; top: 0; z-index: 10; }
+    .nav .logo { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--fg-primary); }
+    .nav .logo-dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; }
+    .nav .crumbs { margin-left: 24px; display: flex; align-items: center; gap: 8px; color: var(--fg-muted); font-size: 13px; }
+    .nav .crumbs span { color: var(--fg-muted); }
+    .nav .crumbs .sep { opacity: 0.4; }
+    .nav .crumbs .cur { color: var(--fg-primary); }
+    .nav .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .nav .stage-chip { background: var(--bg-muted); padding: 4px 10px; border-radius: var(--r-pill); border: 1px solid var(--border); font-size: 11px; color: var(--fg-muted); }
+
+    /* 页面容器 */
+    .page { position: relative; z-index: 1; max-width: 1220px; margin: 0 auto; padding: 24px 28px 48px 28px; }
+
+    /* Header: skill 名 + 徽章 + tabs + 分享 */
+    .header { margin-bottom: 20px; }
+    .title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .h1 { font-family: var(--font-display); font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    .verified { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; background: var(--primary-soft); border: 1px solid rgba(54,221,12,0.35); color: var(--primary); border-radius: var(--r-pill); font-size: 11px; font-weight: 500; }
+    .verified::before { content: '✓'; font-weight: 700; }
+    .share-btn { margin-left: auto; padding: 8px 14px; background: var(--bg-card); border: 1px solid var(--border); color: var(--fg-primary); border-radius: var(--r-pill); font-size: 13px; cursor: pointer; }
+    .tabs { display: flex; gap: 8px; }
+    .tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: var(--bg-card); border: 1px solid var(--border); color: var(--fg-muted); border-radius: var(--r-pill); font-size: 13px; cursor: pointer; font-weight: 500; }
+    .tab.active { color: var(--primary); border-color: rgba(54,221,12,0.35); }
+
+    /* 主 CTA bar */
+    .cta-bar { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 10px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+    .cta-execute { flex: 1; height: 52px; background: var(--primary); color: #000; font-family: var(--font-sans); font-weight: 500; font-size: 16px; border: none; border-radius: var(--r-pill); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: filter 0.15s; }
+    .cta-execute:hover { filter: brightness(1.05); }
+    .cta-history { height: 52px; padding: 0 20px; background: transparent; border: 1px solid var(--border); color: var(--fg-muted); border-radius: var(--r-pill); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+
+    /* 参数配置浮层 */
+    .popover { position: absolute; top: calc(100% + 8px); left: 10px; width: 360px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; z-index: 20; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .popover.open { display: block; animation: slideDown 0.15s ease-out; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .popover-title { font-size: 14px; font-weight: 500; margin: 0 0 14px 0; }
+    .popover-field { margin-bottom: 14px; }
+    .popover-label { display: block; font-size: 13px; color: var(--fg-primary); margin-bottom: 6px; font-weight: 500; }
+    .popover-label .req { color: var(--primary); margin-left: 2px; }
+    .popover .input { width: 100%; background: var(--bg-muted); border: 1px solid var(--border); border-radius: var(--r-md); color: var(--fg-primary); font-family: var(--font-sans); font-size: 14px; padding: 10px 12px; outline: none; font-variant-numeric: tabular-nums; }
+    .popover .input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+    .popover .pill-group { display: flex; gap: 4px; background: var(--bg-muted); padding: 4px; border-radius: var(--r-pill); border: 1px solid var(--border); }
+    .popover .pill { flex: 1; text-align: center; padding: 7px 12px; border-radius: var(--r-pill); font-size: 13px; color: var(--fg-muted); cursor: pointer; user-select: none; }
+    .popover .pill.active { background: var(--bg-accent-bg); color: var(--fg-primary); }
+    .popover-sub-cta { width: 100%; height: 42px; background: var(--primary); color: #000; font-weight: 500; font-size: 14px; border: none; border-radius: var(--r-pill); cursor: pointer; margin-top: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .popover-sub-cta:hover { filter: brightness(1.05); }
+
+    /* Meta 标签行 */
+    .meta-bar { display: flex; gap: 10px; margin-bottom: 16px; font-size: 11px; color: var(--fg-muted); letter-spacing: 0.06em; text-transform: uppercase; flex-wrap: wrap; }
+    .meta-bar .chip { padding: 3px 10px; border: 1px solid var(--border); border-radius: var(--r-pill); }
+
+    /* Hero */
+    .hero { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 28px 32px; margin-bottom: 16px; position: relative; }
+    .hero-label { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 14px; font-weight: 500; border: 1px solid var(--accent); padding: 3px 10px; border-radius: var(--r-pill); }
+    .hero-title { font-family: var(--font-display); font-size: 32px; line-height: 1.25; margin: 0 0 4px 0; font-weight: 700; letter-spacing: -0.01em; }
+    .hero-title .kw { color: var(--accent); }
+    .hero-sub { font-size: 14px; color: var(--fg-muted); margin-top: 14px; line-height: 1.6; max-width: 680px; }
+    .hero-stats { display: flex; gap: 36px; margin-top: 24px; flex-wrap: wrap; }
+    .stat { border-left: 2px solid var(--border); padding-left: 14px; min-width: 88px; }
+    .stat .k { font-size: 10px; color: var(--fg-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .stat .v { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; font-weight: 500; }
+    .stat .v.pos { color: var(--success); }
+    .stat .v.neg { color: var(--danger); }
+
+    /* Card */
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px 24px; margin-bottom: 16px; }
+    .card-title { font-size: 15px; font-weight: 500; margin: 0 0 4px 0; }
+    .card-sub { font-size: 12px; color: var(--fg-muted); margin: 0 0 16px 0; }
+
+    /* chart */
+    .chart-wrap { position: relative; margin-top: 4px; }
+    .chart-legend { display: flex; gap: 18px; margin-top: 10px; font-size: 11px; color: var(--fg-muted); flex-wrap: wrap; }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+
+    /* news */
+    .news { display: flex; flex-direction: column; }
+    .news-item { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .news-item:last-child { border-bottom: none; }
+    .news-idx { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; background: var(--warning); color: var(--bg-page); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-top: 1px; }
+    .news-body .t { color: var(--fg-primary); line-height: 1.45; }
+    .news-body .meta { color: var(--fg-muted); font-size: 11px; margin-top: 4px; }
+    .news-body .meta .pill-mini { background: var(--bg-muted); padding: 1px 8px; border-radius: var(--r-pill); margin-left: 6px; border: 1px solid var(--border); font-size: 10px; }
+    .news-body .meta .pill-mini.high { color: var(--danger); border-color: rgba(244,68,68,0.3); }
+    .news-body .meta .pill-mini.mid { color: var(--warning); border-color: rgba(255,176,0,0.3); }
+
+    /* details */
+    details { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); margin-top: 12px; }
+    summary { padding: 14px 20px; cursor: pointer; font-size: 14px; font-weight: 500; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: '▾'; color: var(--fg-muted); font-size: 11px; transition: transform .15s; }
+    details[open] summary::after { transform: rotate(180deg); }
+    details > .body { padding: 0 20px 20px; font-size: 13px; line-height: 1.7; color: var(--fg-muted); }
+    details > .body p { margin: 0 0 12px 0; }
+    details > .body strong { color: var(--fg-primary); font-weight: 500; }
+
+    /* Footer */
+    .footer { text-align: center; color: var(--fg-muted); font-size: 11px; padding: 16px; border-top: 1px solid var(--border); margin-top: 32px; }
+
+    /* Responsive */
+    @media (max-width: 720px) {
+      .page { padding: 16px; }
+      .nav { padding: 0 16px; }
+      .nav .crumbs { display: none; }
+      .hero-title { font-size: 24px; }
+      .h1 { font-size: 22px; }
+      .hero-stats { gap: 20px; }
+      .popover { width: calc(100vw - 32px); left: 0; right: 0; }
+      .cta-execute { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景辐射装饰 v5.1 -->
+  <div class="radial-deco" aria-hidden="true">
+    <svg viewBox="0 0 800 600" preserveAspectRatio="xMaxYMin slice">
+      <g stroke="rgba(255,255,255,0.05)" stroke-width="1" fill="none">
+        <line x1="800" y1="0" x2="300" y2="120" />
+        <line x1="800" y1="0" x2="350" y2="180" />
+        <line x1="800" y1="0" x2="380" y2="240" />
+        <line x1="800" y1="0" x2="400" y2="300" />
+        <line x1="800" y1="0" x2="410" y2="360" />
+        <line x1="800" y1="0" x2="420" y2="420" />
+        <line x1="800" y1="0" x2="430" y2="480" />
+        <line x1="800" y1="0" x2="440" y2="540" />
+        <line x1="800" y1="0" x2="460" y2="600" />
+        <line x1="800" y1="0" x2="520" y2="600" />
+        <line x1="800" y1="0" x2="580" y2="600" />
+        <line x1="800" y1="0" x2="640" y2="600" />
+        <line x1="800" y1="0" x2="700" y2="600" />
+        <line x1="800" y1="0" x2="760" y2="600" />
+      </g>
+      <g stroke="rgba(255,255,255,0.03)" stroke-width="1" fill="none">
+        <line x1="800" y1="0" x2="200" y2="150" />
+        <line x1="800" y1="0" x2="150" y2="300" />
+        <line x1="800" y1="0" x2="100" y2="500" />
+      </g>
+    </svg>
+  </div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span>Antseer</span>
+    </div>
+    <div class="crumbs">
+      <span>首页</span>
+      <span class="sep">›</span>
+      <span>Skillhub</span>
+      <span class="sep">›</span>
+      <span class="cur">polymarket-drift-radar</span>
+    </div>
+    <div class="right">
+      <span class="stage-chip">demo-v0 · 粗版</span>
+    </div>
+  </nav>
+
+  <!-- 页面主体 -->
+  <div class="page">
+
+    <!-- Header: Skill 名 + 徽章 + tabs + 分享 -->
+    <header class="header">
+      <div class="title-row">
+        <h1 class="h1">polymarket-drift-radar</h1>
+        <span class="verified">已认证</span>
+        <button class="share-btn">⇱ 分享</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active">▸ 在线执行</div>
+        <div class="tab">≡ Skill 详情</div>
+      </div>
+    </header>
+
+    <!-- 主 CTA bar + 参数浮层 -->
+    <div class="cta-bar">
+      <button class="cta-execute" id="cta">▸ 执行 Skill</button>
+      <button class="cta-history">⟳ 历史</button>
+
+      <!-- 参数浮层 (默认隐藏,点 CTA 展开) -->
+      <div class="popover" id="popover">
+        <h4 class="popover-title">参数配置</h4>
+
+        <div class="popover-field">
+          <label class="popover-label">事件<span class="req">*</span></label>
+          <input class="input" type="text" placeholder="Polymarket 链接或关键词" value="Will Trump win the 2024 election?" />
+        </div>
+
+        <div class="popover-field">
+          <label class="popover-label">时间窗口<span class="req">*</span></label>
+          <div class="pill-group">
+            <div class="pill">7D</div>
+            <div class="pill active">30D</div>
+          </div>
+        </div>
+
+        <button class="popover-sub-cta" id="popover-submit">▸ 执行 Skill</button>
+      </div>
+    </div>
+
+    <!-- Meta 标签行 -->
+    <div class="meta-bar">
+      <span class="chip">DEMO</span>
+      <span class="chip">Polymarket</span>
+      <span class="chip">30D</span>
+      <span class="chip">2026/4/16</span>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-label">本次结论</div>
+      <h2 class="hero-title">
+        <span class="kw">回归入场窗口</span><br />
+        当前概率正从新闻脉冲峰值回落
+      </h2>
+      <p class="hero-sub">
+        过去 30 天该市场出现 <strong style="color:var(--fg-primary)">2 次</strong> 新闻驱动的显著漂移,当前价格已从第二次峰值 <span class="num">67.2%</span> 回落至 <span class="num">62.4%</span>,进入均值回归通道。
+        历史上类似漂移在 72 小时内有 <span class="num">73%</span> 概率回归至 MA-20 附近(约 <span class="num">58.5%</span>)。
+      </p>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="k">当前概率</div>
+          <div class="v num">62.4%</div>
+        </div>
+        <div class="stat">
+          <div class="k">24H 变化</div>
+          <div class="v num neg">−2.8pp</div>
+        </div>
+        <div class="stat">
+          <div class="k">7D 波动率</div>
+          <div class="v num">4.1%</div>
+        </div>
+        <div class="stat">
+          <div class="k">Z-Score</div>
+          <div class="v num">+1.2σ</div>
+        </div>
+        <div class="stat">
+          <div class="k">30D 成交量</div>
+          <div class="v num">$48.2M</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN CHART -->
+    <section class="card">
+      <h3 class="card-title">概率曲线 · 30 天</h3>
+      <p class="card-sub">带新闻节点标注 · 异常区间标红 · Bollinger 20/2 上下轨</p>
+      <div class="chart-wrap">
+        <!-- 概率曲线 SVG (粗版,S3 替换为真实图表库) -->
+        <svg viewBox="0 0 900 300" width="100%" height="260" preserveAspectRatio="none" style="display:block">
+          <!-- Y grid -->
+          <line x1="30" y1="60" x2="895" y2="60" stroke="rgba(255,255,255,0.06)" />
+          <line x1="30" y1="140" x2="895" y2="140" stroke="rgba(255,255,255,0.06)" />
+          <line x1="30" y1="220" x2="895" y2="220" stroke="rgba(255,255,255,0.06)" />
+          <!-- Y labels -->
+          <text x="0" y="63" fill="#8a8885" font-size="10" font-family="Inter">75%</text>
+          <text x="0" y="143" fill="#8a8885" font-size="10" font-family="Inter">60%</text>
+          <text x="0" y="223" fill="#8a8885" font-size="10" font-family="Inter">45%</text>
+
+          <!-- 异常区间 2 段(半透明红) -->
+          <rect x="240" y="50" width="85" height="230" fill="rgba(244,68,68,0.10)" />
+          <rect x="615" y="50" width="95" height="230" fill="rgba(244,68,68,0.10)" />
+
+          <!-- Bollinger 上下轨 -->
+          <path d="M 30,135 Q 120,130 220,145 T 420,160 T 620,135 T 880,150" stroke="rgba(255,176,0,0.25)" fill="none" stroke-dasharray="3,4" stroke-width="1" />
+          <path d="M 30,175 Q 120,180 220,195 T 420,205 T 620,185 T 880,200" stroke="rgba(255,176,0,0.25)" fill="none" stroke-dasharray="3,4" stroke-width="1" />
+
+          <!-- 主曲线 · 本 Skill 的 accent 色 -->
+          <path d="M 30,170 L 80,165 L 130,160 L 180,158 L 220,155 L 250,80 L 290,95 L 325,125 L 370,150 L 420,155 L 470,158 L 520,160 L 560,158 L 600,155 L 630,90 L 670,105 L 710,125 L 740,140 L 790,150 L 830,155 L 880,160"
+                stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+
+          <!-- 新闻节点竖线 + 圆 -->
+          <g font-family="Inter">
+            <line x1="260" y1="50" x2="260" y2="280" stroke="#ffb000" stroke-width="1" stroke-dasharray="2,3" />
+            <circle cx="260" cy="38" r="12" fill="#ffb000" />
+            <text x="260" y="42" text-anchor="middle" font-size="11" fill="#080807" font-weight="700">1</text>
+
+            <line x1="450" y1="50" x2="450" y2="280" stroke="#ffb000" stroke-width="1" stroke-dasharray="2,3" />
+            <circle cx="450" cy="38" r="12" fill="#ffb000" />
+            <text x="450" y="42" text-anchor="middle" font-size="11" fill="#080807" font-weight="700">2</text>
+
+            <line x1="640" y1="50" x2="640" y2="280" stroke="#ffb000" stroke-width="1" stroke-dasharray="2,3" />
+            <circle cx="640" cy="38" r="12" fill="#ffb000" />
+            <text x="640" y="42" text-anchor="middle" font-size="11" fill="#080807" font-weight="700">3</text>
+          </g>
+
+          <!-- 当前点 · accent 色 -->
+          <circle cx="880" cy="160" r="5" fill="var(--accent)" />
+          <circle cx="880" cy="160" r="10" fill="none" stroke="var(--accent)" stroke-opacity="0.4" />
+          <text x="880" y="185" text-anchor="middle" fill="#ee6c4d" font-size="10" font-family="Inter" font-weight="500">NOW</text>
+        </svg>
+
+        <!-- 量柱 -->
+        <svg viewBox="0 0 900 80" width="100%" height="80" preserveAspectRatio="none" style="display:block; margin-top: 4px;">
+          <text x="0" y="14" fill="#8a8885" font-size="10" font-family="Inter">成交量</text>
+          <g>
+            <rect x="30" y="56" width="20" height="12" fill="rgba(238,108,77,0.45)" />
+            <rect x="58" y="50" width="20" height="18" fill="rgba(238,108,77,0.45)" />
+            <rect x="86" y="52" width="20" height="16" fill="rgba(238,108,77,0.45)" />
+            <rect x="114" y="48" width="20" height="20" fill="rgba(238,108,77,0.45)" />
+            <rect x="142" y="54" width="20" height="14" fill="rgba(238,108,77,0.45)" />
+            <rect x="170" y="50" width="20" height="18" fill="rgba(238,108,77,0.45)" />
+            <rect x="198" y="44" width="20" height="24" fill="rgba(238,108,77,0.45)" />
+            <rect x="226" y="26" width="20" height="42" fill="rgba(244,68,68,0.7)" />
+            <rect x="254" y="22" width="20" height="46" fill="rgba(244,68,68,0.7)" />
+            <rect x="282" y="32" width="20" height="36" fill="rgba(244,68,68,0.7)" />
+            <rect x="310" y="40" width="20" height="28" fill="rgba(238,108,77,0.45)" />
+            <rect x="338" y="48" width="20" height="20" fill="rgba(238,108,77,0.45)" />
+            <rect x="366" y="50" width="20" height="18" fill="rgba(238,108,77,0.45)" />
+            <rect x="394" y="52" width="20" height="16" fill="rgba(238,108,77,0.45)" />
+            <rect x="422" y="50" width="20" height="18" fill="rgba(238,108,77,0.45)" />
+            <rect x="450" y="46" width="20" height="22" fill="rgba(238,108,77,0.45)" />
+            <rect x="478" y="54" width="20" height="14" fill="rgba(238,108,77,0.45)" />
+            <rect x="506" y="52" width="20" height="16" fill="rgba(238,108,77,0.45)" />
+            <rect x="534" y="48" width="20" height="20" fill="rgba(238,108,77,0.45)" />
+            <rect x="562" y="52" width="20" height="16" fill="rgba(238,108,77,0.45)" />
+            <rect x="590" y="50" width="20" height="18" fill="rgba(238,108,77,0.45)" />
+            <rect x="618" y="30" width="20" height="38" fill="rgba(244,68,68,0.7)" />
+            <rect x="646" y="20" width="20" height="48" fill="rgba(244,68,68,0.7)" />
+            <rect x="674" y="28" width="20" height="40" fill="rgba(244,68,68,0.7)" />
+            <rect x="702" y="40" width="20" height="28" fill="rgba(238,108,77,0.45)" />
+            <rect x="730" y="46" width="20" height="22" fill="rgba(238,108,77,0.45)" />
+            <rect x="758" y="50" width="20" height="18" fill="rgba(238,108,77,0.45)" />
+            <rect x="786" y="52" width="20" height="16" fill="rgba(238,108,77,0.45)" />
+            <rect x="814" y="54" width="20" height="14" fill="rgba(238,108,77,0.45)" />
+            <rect x="842" y="50" width="20" height="18" fill="rgba(238,108,77,0.45)" />
+            <rect x="870" y="48" width="20" height="20" fill="rgba(238,108,77,0.45)" />
+          </g>
+        </svg>
+
+        <div class="chart-legend">
+          <span><span class="swatch" style="background: var(--accent);"></span>概率</span>
+          <span><span class="swatch" style="background: rgba(255,176,0,0.5); border: 1px dashed var(--warning);"></span>Bollinger 带</span>
+          <span><span class="swatch" style="background: rgba(244,68,68,0.25);"></span>漂移异常区间</span>
+          <span><span class="swatch" style="background: var(--warning); border-radius: 50%;"></span>新闻节点</span>
+          <span><span class="swatch" style="background: rgba(244,68,68,0.7);"></span>量 · 异常时段</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- NEWS LIST -->
+    <section class="card">
+      <h3 class="card-title">关键新闻节点</h3>
+      <p class="card-sub">按时间排序 · 与概率跳变时点对齐</p>
+      <div class="news">
+        <div class="news-item">
+          <div class="news-idx">1</div>
+          <div class="news-body">
+            <div class="t">Supreme Court rules on ballot challenge, decision favors incumbent</div>
+            <div class="meta">
+              <span>CNN · 26 天前</span>
+              <span class="pill-mini high">影响度 高</span>
+            </div>
+          </div>
+        </div>
+        <div class="news-item">
+          <div class="news-idx">2</div>
+          <div class="news-body">
+            <div class="t">Second presidential debate canceled amid scheduling dispute</div>
+            <div class="meta">
+              <span>Reuters · 16 天前</span>
+              <span class="pill-mini mid">影响度 中</span>
+            </div>
+          </div>
+        </div>
+        <div class="news-item">
+          <div class="news-idx">3</div>
+          <div class="news-body">
+            <div class="t">Key swing state polls show 3-point lead narrowing to 0.8</div>
+            <div class="meta">
+              <span>AP News · 8 天前</span>
+              <span class="pill-mini high">影响度 高</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUST LAYER -->
+    <details open>
+      <summary>为什么给出"回归入场"的结论?</summary>
+      <div class="body">
+        <p>我们识别到两次典型的"新闻脉冲 → 概率跳变 → 异常持续 → 回归"模式:</p>
+        <p>
+          <strong>第一次漂移(26 天前)</strong>: 最高法院裁决后,概率从 58% 跳至 72%,持续 4 天偏离 Bollinger 上轨,随后用 5 天回归至 MA-20 附近。
+        </p>
+        <p>
+          <strong>第二次漂移(8 天前)</strong>: 摇摆州民调收窄消息后,概率再次跳至 67.2%,当前已回落至 62.4%,进入回归通道。
+        </p>
+        <p>历史上两段漂移模式,在第二次回归期入场(当前位置)的 72 小时命中率为 <strong>73%</strong>,目标位 MA-20 附近(约 58.5%)。</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>方法论 · 漂移是怎么识别的?</summary>
+      <div class="body">
+        <p><strong>漂移异常</strong>: 概率偏离 Bollinger 带(20 期 MA ± 2σ)且持续 ≥ 24h。</p>
+        <p><strong>新闻节点</strong>: 按市场关键词检索的新闻 API,按发布时间对齐到概率曲线。</p>
+        <p><strong>入场判定</strong>: 当前位于回归通道(已从异常区间离开)且 Z-Score 仍 > 1σ,意味着还有下行空间。</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>风险提示</summary>
+      <div class="body">
+        <p>• 本工具只做<strong>分析辅助</strong>,不是投资建议。</p>
+        <p>• 历史模式不保证未来重复;黑天鹅新闻会打破所有规律。</p>
+        <p>• Polymarket 市场流动性差异大,小盘市场的"漂移"可能是操纵而非真实信号。</p>
+        <p>• 不要仅凭本工具下单;参考链上数据和多方消息交叉验证。</p>
+      </div>
+    </details>
+
+    <div class="footer">
+      demo-v0 · Mock Data · Powered by Antseer.ai
+    </div>
+  </div>
+
+  <script>
+    // 参数浮层开关
+    var cta = document.getElementById('cta');
+    var popover = document.getElementById('popover');
+    var popoverSubmit = document.getElementById('popover-submit');
+
+    cta.addEventListener('click', function (e) {
+      e.stopPropagation();
+      popover.classList.toggle('open');
+    });
+
+    popoverSubmit.addEventListener('click', function (e) {
+      e.stopPropagation();
+      popover.classList.remove('open');
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!popover.contains(e.target) && e.target !== cta) {
+        popover.classList.remove('open');
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') popover.classList.remove('open');
+    });
+
+    // Pill 切换
+    document.querySelectorAll('.pill-group').forEach(function (g) {
+      g.addEventListener('click', function (e) {
+        var t = e.target.closest('.pill');
+        if (!t) return;
+        g.querySelectorAll('.pill').forEach(function (p) { p.classList.remove('active'); });
+        t.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

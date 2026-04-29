@@ -1,0 +1,11 @@
+{
+  "repo": "antseer/third-mcp-server",
+  "source": "https://github.com/antseer/third-mcp-server.git",
+  "head_sha": "6a8bdc3cf29dfacd7b7aa5b783436b262f74e545",
+  "fetched_at": "2026-04-24T07:04:47Z",
+  "docs": {
+    "MCP-Data-Capabilities.md": "cache/MCP-Data-Capabilities.md",
+    "MCP-Tools-Reference.md": "cache/MCP-Tools-Reference.md",
+    "MCP-Tools-Query-Type-Mapping.md": "cache/MCP-Tools-Query-Type-Mapping.md"
+  }
+}

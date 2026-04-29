@@ -1,6 +1,6 @@
 interface:
   display_name: "Skill Creator Rick"
-  short_description: "Classify and package skills through Requirement and Complete stages."
+  short_description: "Classify and package skills through Semi-finished and Finished stages."
   icon_small: "./assets/skill-creator-rick-small.svg"
   icon_large: "./assets/skill-creator-rick-card.svg"
   brand_color: "#12C48B"

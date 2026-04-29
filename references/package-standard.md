@@ -4,12 +4,12 @@
 
 Produce skill packages that are honest about their lifecycle stage:
 
-1. **Stage 1 — Requirement Skill**: complete product / frontend / backend / data-source plan, current experience shown with mock data, ready for engineering implementation.
-2. **Stage 2 — Complete Skill**: all user-path mock data replaced by real MCP / API / database sources, verified, ready for direct use and sharing.
+1. **Stage 1 — Semi-finished Skill**: complete product / frontend / backend / data-source plan, current experience shown with mock data, ready for engineering implementation.
+2. **Stage 2 — Finished Skill**: all user-path mock data replaced by real MCP / API / database sources, verified, ready for direct use and sharing.
 
 `split` is a packaging action, not a lifecycle stage.
 
-## Stage 1 — Requirement Skill
+## Stage 1 — Semi-finished Skill
 
 Use when the product is defined but real data integration is not finished.
 
@@ -23,6 +23,12 @@ Required:
 - `TECH-INTERFACE-REQUEST.md`
 - At least one product-plan artifact: PRD, spec, prototype, frontend/backend doc, or `docs/PRODUCT-SPEC.md`
 
+Two valid shapes:
+- **Stage 1 Lite Semi-finished Package**: the minimum contract above.
+- **Stage 1 Antseer S5 Semi-finished Package**: the minimum contract above plus `data-inventory.md`, `mcp-audit.md`, `data-prd.md`, `skill-prd.md`, `review-report.md`, `frontend/index.html`, and `layers/L1-data`, `layers/L2-aggregation`, `layers/L3-compute`, `layers/L4-llm`, `layers/L5-presentation`.
+
+If any S5-specific artifact exists, the stricter S5 structure is required.
+
 Must state:
 - which data is mock / fixture / stub
 - where each mock appears in the user experience
@@ -34,8 +40,9 @@ Must not claim:
 - direct-use ready
 - directly usable for real analysis
 - fully integrated with real data
+- share-ready while unresolved placeholders remain (`TODO`, `Replace this`, `{{FILL_BEFORE_VALIDATE}}`, etc.)
 
-## Stage 2 — Complete Skill
+## Stage 2 — Finished Skill
 
 Use when the skill can be directly installed / run / reused.
 
@@ -81,12 +88,13 @@ Split plan format:
 ## Validation checklist
 
 - `SKILL.md` passes frontmatter validation
-- Stage is explicitly stated as Stage 1 Requirement or Stage 2 Complete
+- Stage is explicitly stated as Stage 1 Semi-finished or Stage 2 Finished
 - Stage 1 has `Data Reality`, Stage 1 implementation docs, tech interface request, and product-plan artifact
 - Stage 2 has `Data Sources`, `Validation Evidence`, `MCP-COVERAGE.md`, `VERSION`, and `agents/openai.yaml`
 - If the skill accepts user parameters, `skill.meta.json > input_schema` exists and follows the standard
 - No `.DS_Store`, `__pycache__`, or `*.pyc`
 - No unresolved placeholders in Stage 2 README or coverage docs
+- No unresolved placeholders in Stage 1 user-facing handoff docs
 - No Stage 2 user-path mock / stub / random data
 - `--run-checks` passes when executable checks are provided
 - `scripts/audit_skill.py` reports score, missing items, and Stage 2 blockers

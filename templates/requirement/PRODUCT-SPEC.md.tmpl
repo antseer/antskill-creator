@@ -1,17 +1,62 @@
 # {{DISPLAY_NAME}} · Product Spec
 
-## User problem
+> Fill every `{{FILL_BEFORE_VALIDATE}}` marker before calling this Stage 1 share-ready.
 
-TODO
+## 1. User problem
 
-## Frontend / output experience
+| Field | Content |
+|---|---|
+| Target user | {{FILL_BEFORE_VALIDATE}} |
+| Decision / job to be done | {{FILL_BEFORE_VALIDATE}} |
+| Existing alternative | {{FILL_BEFORE_VALIDATE}} |
+| Why this is better | {{FILL_BEFORE_VALIDATE}} |
 
-TODO
+## 2. Frontend / output experience
 
-## Backend capability
+| Layer | Required description |
+|---|---|
+| Hero conclusion | {{FILL_BEFORE_VALIDATE}} |
+| Primary charts / cards | {{FILL_BEFORE_VALIDATE}} |
+| Trust layer | methodology / raw data / data coverage / caveats |
+| States | loading / empty / error / partial-data behavior |
 
-TODO
+## 3. Data inventory summary
 
-## Data dependencies
+Detailed field inventory lives in `data-inventory.md`. Every dynamic UI field must have a stable Dxx ID.
 
-TODO
+| Dxx range | Area | Expected fields | Status |
+|---|---|---|---|
+| D01-D19 | Inputs | {{FILL_BEFORE_VALIDATE}} | pending inventory |
+| D20-D59 | Hero / summary | {{FILL_BEFORE_VALIDATE}} | pending inventory |
+| D60-D99 | Charts / tables | {{FILL_BEFORE_VALIDATE}} | pending inventory |
+| D100-D129 | States / tooltips | {{FILL_BEFORE_VALIDATE}} | pending inventory |
+
+## 4. Layer ownership plan
+
+| Layer | Responsibility | Current known items |
+|---|---|---|
+| L1-A | Existing MCP direct data | {{FILL_BEFORE_VALIDATE}} |
+| L1-B | Missing raw MCP data | {{FILL_BEFORE_VALIDATE}} |
+| L2 | Missing aggregate MCP/API | {{FILL_BEFORE_VALIDATE}} |
+| L3 | Skill-local deterministic computation | {{FILL_BEFORE_VALIDATE}} |
+| L4 | LLM structured interpretation + fallback | {{FILL_BEFORE_VALIDATE}} |
+| L5 | Frontend presentation | {{FILL_BEFORE_VALIDATE}} |
+
+## 5. Backend capability
+
+| Capability | Owner | Interface / contract | Blocks Stage 2 |
+|---|---|---|---|
+| {{FILL_BEFORE_VALIDATE}} | backend / MCP | {{FILL_BEFORE_VALIDATE}} | yes |
+
+## 6. Data dependencies
+
+| Data item | Current state | Future source | Refresh | Failure behavior |
+|---|---|---|---|---|
+| {{FILL_BEFORE_VALIDATE}} | mock / static / live | MCP/API/database | {{FILL_BEFORE_VALIDATE}} | {{FILL_BEFORE_VALIDATE}} |
+
+## 7. Acceptance criteria
+
+- [ ] All visible dynamic fields have Dxx IDs in `data-inventory.md`.
+- [ ] All L1-B / L2 gaps are listed in `data-prd.md` and `TECH-INTERFACE-REQUEST.md`.
+- [ ] The frontend consumes only fields defined in `skill-prd.md` appendix / data contract.
+- [ ] Mock data is visibly labeled and cannot be mistaken for real analysis.

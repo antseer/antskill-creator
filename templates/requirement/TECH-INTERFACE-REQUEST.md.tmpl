@@ -1,13 +1,28 @@
 # {{DISPLAY_NAME}} · 技术接口与数据提需
 
-## 1. Required MCP / API / data sources
+> Fill every `{{FILL_BEFORE_VALIDATE}}` marker before Stage 1 validation.
 
-| Priority | Data item | Required MCP/API/database | Request schema | Response schema | Refresh | Acceptance criteria |
-|---|---|---|---|---|---|---|
-| P0 | TODO | TODO | TODO | TODO | TODO | TODO |
+## 1. MCP / API / database contracts
+
+| Priority | Dxx | Data item | Layer | Required MCP/API/database | Request schema | Response schema | Refresh | Acceptance criteria |
+|---|---|---|---|---|---|---|---|---|
+| P0 | Dxx | {{FILL_BEFORE_VALIDATE}} | L1-B / L2 | {{FILL_BEFORE_VALIDATE}} | {{FILL_BEFORE_VALIDATE}} | {{FILL_BEFORE_VALIDATE}} | {{FILL_BEFORE_VALIDATE}} | {{FILL_BEFORE_VALIDATE}} |
 
 ## 2. Mock replacement plan
 
-| Mock item | Current file/module | Real source | Owner | Blocker |
+| Mock item | Current file/module | Current purpose | Real source | Owner | Blocker | Blocks Stage 2 |
+|---|---|---|---|---|---|---|
+| {{FILL_BEFORE_VALIDATE}} | {{FILL_BEFORE_VALIDATE}} | UI/product demo | MCP/API/database | backend / MCP | {{FILL_BEFORE_VALIDATE}} | yes |
+
+## 3. Failure and degradation behavior
+
+| Dependency | Failure mode | User-visible behavior | Fallback | Alert / logging |
 |---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO |
+| {{FILL_BEFORE_VALIDATE}} | unavailable / stale / partial | {{FILL_BEFORE_VALIDATE}} | {{FILL_BEFORE_VALIDATE}} | {{FILL_BEFORE_VALIDATE}} |
+
+## 4. Stage 2 verification evidence required
+
+- [ ] Every P0 source has a last-verified timestamp.
+- [ ] Every L1-B / L2 gap has either been implemented or explicitly descoped.
+- [ ] User path no longer depends on mock / static / random demo data.
+- [ ] `MCP-COVERAGE.md` maps every data dependency to source, method, failure handling, and evidence.

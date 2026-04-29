@@ -1,6 +1,20 @@
 # {{DISPLAY_NAME}} · 技术同事待办清单
 
-- [ ] 确认 MCP / API 数据源
-- [ ] 替换用户主路径 mock 数据
-- [ ] 补错误处理和空态
-- [ ] 补 Stage 2 验证证据
+## P0 — Stage 2 blockers
+
+- [ ] Replace every user-path mock/static data dependency listed in `TECH-INTERFACE-REQUEST.md`.
+- [ ] Implement or verify every L1-B / L2 item listed in `data-prd.md`.
+- [ ] Write `MCP-COVERAGE.md` with source, method, last verification time, and failure handling.
+- [ ] Add executable validation checks for live data reachability and deterministic calculations.
+
+## P1 — Quality hardening
+
+- [ ] Add empty / loading / error / partial-data states for every primary module.
+- [ ] Add unit tests for L3 deterministic computations.
+- [ ] Add L4 fallback tests for every prompt output schema.
+- [ ] Confirm `frontend/index.html` consumes only Dxx fields defined in `skill-prd.md`.
+
+## P2 — Post-launch validation
+
+- [ ] Collect enough real-history samples for backtest / correlation / regression validation if applicable.
+- [ ] Replace heuristic thresholds with measured thresholds when data is available.

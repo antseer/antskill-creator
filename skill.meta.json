@@ -1,7 +1,7 @@
 {
   "id": "skill-creator-rick",
   "name": "Skill Creator Rick",
-  "description": "Classify, scaffold, validate, package, and publish skills through Stage 1 Requirement and Stage 2 Complete lifecycles.",
+  "description": "Classify, scaffold, validate, package, and publish skills through Stage 1 Semi-finished and Stage 2 Finished lifecycles.",
   "input_schema": {
     "zh": {
       "action": {
@@ -32,8 +32,8 @@
         "default": "auto",
         "options": [
           { "label": "自动判断", "value": "auto" },
-          { "label": "Stage 1 需求型", "value": "requirement" },
-          { "label": "Stage 2 完整型", "value": "complete" }
+          { "label": "Stage 1 半成品", "value": "requirement" },
+          { "label": "Stage 2 成品", "value": "complete" }
         ],
         "description": "指定校验或包装阶段；不确定时使用自动判断。",
         "required": false
@@ -68,8 +68,8 @@
         "default": "auto",
         "options": [
           { "label": "Auto detect", "value": "auto" },
-          { "label": "Stage 1 Requirement", "value": "requirement" },
-          { "label": "Stage 2 Complete", "value": "complete" }
+          { "label": "Stage 1 Semi-finished", "value": "requirement" },
+          { "label": "Stage 2 Finished", "value": "complete" }
         ],
         "description": "Packaging stage to validate or apply; use auto when unsure.",
         "required": false

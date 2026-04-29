@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>polymarket-drift-radar · demo-v1 · 高保真</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-page: #080807;
+      --bg-nav: #0a0a0a;
+      --bg-card: #1d1d1a;
+      --bg-muted: #121210;
+      --bg-accent-bg: #2a2926;
+      --fg-primary: #ffffff;
+      --fg-muted: #8a8885;
+      --border: rgba(255, 255, 255, 0.12);
+      --border-strong: rgba(255, 255, 255, 0.22);
+
+      --success: #05df72;
+      --warning: #ffb000;
+      --info: #1196dd;
+      --danger: #f44;
+      --danger-soft: rgba(244, 68, 68, 0.12);
+      --danger-strong: rgba(244, 68, 68, 0.7);
+
+      --primary: #36dd0c;
+      --primary-soft: rgba(54, 221, 12, 0.15);
+      --primary-strong: rgba(54, 221, 12, 0.4);
+
+      --accent: #ee6c4d;
+      --accent-soft: rgba(238, 108, 77, 0.15);
+
+      --r-sm: 6px;
+      --r-md: 8px;
+      --r-lg: 12px;
+      --r-pill: 9999px;
+
+      --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+      --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+
+      --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
+      --s-6: 24px; --s-7: 28px; --s-8: 32px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg-page); color: var(--fg-primary); font-family: var(--font-sans); font-weight: 400; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    body { min-height: 100vh; position: relative; overflow-x: hidden; }
+    button { font-family: inherit; }
+    a { color: inherit; text-decoration: none; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    .radial-deco { position: fixed; top: 0; right: 0; width: 55vw; height: 65vh; pointer-events: none; z-index: 0; }
+    .radial-deco svg { width: 100%; height: 100%; }
+
+    .nav { height: 58px; background: var(--bg-nav); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 var(--s-7); position: sticky; top: 0; z-index: 100; }
+    .logo { display: flex; align-items: center; gap: var(--s-2); font-size: 14px; font-weight: 500; }
+    .logo-dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 8px var(--primary-strong); }
+    .crumbs { margin-left: var(--s-6); display: flex; align-items: center; gap: var(--s-2); color: var(--fg-muted); font-size: 13px; }
+    .crumbs .sep { opacity: 0.4; }
+    .crumbs .cur { color: var(--fg-primary); }
+    .nav-right { margin-left: auto; display: flex; gap: var(--s-2); align-items: center; }
+    .stage-chip { background: var(--bg-muted); padding: 4px 10px; border-radius: var(--r-pill); border: 1px solid var(--border); font-size: 11px; color: var(--fg-muted); letter-spacing: 0.04em; }
+
+    .state-switcher { display: flex; align-items: center; gap: 6px; }
+    .state-switcher .lbl { font-size: 10px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 2px; }
+    .ss-btn { height: 26px; padding: 0 10px; background: var(--bg-muted); border: 1px solid var(--border); color: var(--fg-muted); border-radius: var(--r-pill); font-size: 11px; cursor: pointer; font-family: var(--font-sans); }
+    .ss-btn:hover { border-color: var(--border-strong); color: var(--fg-primary); }
+    .ss-btn.active { background: var(--primary-soft); border-color: var(--primary-strong); color: var(--primary); }
+
+    .page { position: relative; z-index: 1; max-width: 1220px; margin: 0 auto; padding: var(--s-6) var(--s-7) 48px var(--s-7); }
+
+    .header { margin-bottom: var(--s-5); }
+    .title-row { display: flex; align-items: center; gap: var(--s-3); margin-bottom: 14px; flex-wrap: wrap; }
+    .h1 { font-family: var(--font-display); font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    .verified { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; background: var(--primary-soft); border: 1px solid var(--primary-strong); color: var(--primary); border-radius: var(--r-pill); font-size: 11px; font-weight: 500; }
+    .verified::before { content: '✓'; font-weight: 700; }
+    .share-btn { margin-left: auto; padding: var(--s-2) 14px; background: var(--bg-card); border: 1px solid var(--border); color: var(--fg-primary); border-radius: var(--r-pill); font-size: 13px; cursor: pointer; }
+    .share-btn:hover { border-color: var(--border-strong); background: var(--bg-accent-bg); }
+    .tabs { display: flex; gap: var(--s-2); }
+    .tab { display: inline-flex; align-items: center; gap: 6px; padding: var(--s-2) 14px; background: var(--bg-card); border: 1px solid var(--border); color: var(--fg-muted); border-radius: var(--r-pill); font-size: 13px; cursor: pointer; font-weight: 500; }
+    .tab:hover { color: var(--fg-primary); }
+    .tab.active { color: var(--primary); border-color: var(--primary-strong); }
+
+    .cta-bar { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 10px; margin-bottom: var(--s-5); display: flex; gap: 10px; align-items: center; }
+    .cta-execute { flex: 1; height: 52px; background: var(--primary); color: #000; font-weight: 500; font-size: 16px; border: none; border-radius: var(--r-pill); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); }
+    .cta-execute:hover { filter: brightness(1.08); box-shadow: 0 0 24px var(--primary-strong); }
+    .cta-execute:focus { outline: none; box-shadow: 0 0 0 2px var(--primary), 0 0 24px var(--primary-strong); }
+    .cta-history { height: 52px; padding: 0 var(--s-5); background: transparent; border: 1px solid var(--border); color: var(--fg-muted); border-radius: var(--r-pill); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .cta-history:hover { border-color: var(--border-strong); color: var(--fg-primary); }
+
+    .popover-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 50; display: none; }
+    .popover-backdrop.open { display: block; }
+    .popover { position: absolute; top: calc(100% + var(--s-2)); left: 10px; width: 380px; background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: var(--r-lg); padding: var(--s-5); z-index: 60; display: none; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    .popover.open { display: block; animation: slideDown .18s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .popover-title { font-size: 14px; font-weight: 500; margin: 0 0 14px 0; display: flex; align-items: center; justify-content: space-between; }
+    .popover-close { width: 22px; height: 22px; background: transparent; border: none; color: var(--fg-muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+    .popover-close:hover { color: var(--fg-primary); }
+    .popover-field { margin-bottom: 14px; }
+    .popover-label { display: block; font-size: 13px; color: var(--fg-primary); margin-bottom: 6px; font-weight: 500; }
+    .popover-label .req { color: var(--primary); margin-left: 2px; }
+    .popover-hint { font-size: 11px; color: var(--fg-muted); margin-top: 4px; }
+    .input { width: 100%; background: var(--bg-muted); border: 1px solid var(--border); border-radius: var(--r-md); color: var(--fg-primary); font-family: var(--font-sans); font-size: 14px; padding: 10px var(--s-3); outline: none; }
+    .input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+    .input::placeholder { color: var(--fg-muted); }
+    .pill-group { display: flex; gap: 4px; background: var(--bg-muted); padding: 4px; border-radius: var(--r-pill); border: 1px solid var(--border); }
+    .pill { flex: 1; text-align: center; padding: 7px var(--s-3); border-radius: var(--r-pill); font-size: 13px; color: var(--fg-muted); cursor: pointer; user-select: none; font-weight: 500; }
+    .pill:hover { color: var(--fg-primary); }
+    .pill.active { background: var(--bg-accent-bg); color: var(--fg-primary); }
+    .popover-sub-cta { width: 100%; height: 42px; background: var(--primary); color: #000; font-weight: 500; font-size: 14px; border: none; border-radius: var(--r-pill); cursor: pointer; margin-top: 4px; display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); }
+    .popover-sub-cta:hover:not(:disabled) { filter: brightness(1.08); }
+    .popover-sub-cta:disabled { background: var(--bg-accent-bg); color: var(--fg-muted); cursor: not-allowed; }
+
+    .meta-bar { display: flex; gap: 10px; margin-bottom: var(--s-4); font-size: 11px; color: var(--fg-muted); letter-spacing: 0.06em; text-transform: uppercase; flex-wrap: wrap; }
+    .meta-bar .chip { padding: 3px 10px; border: 1px solid var(--border); border-radius: var(--r-pill); }
+
+    .hero { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-7) var(--s-8); margin-bottom: var(--s-4); position: relative; overflow: hidden; }
+    .hero-label { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 14px; font-weight: 500; border: 1px solid var(--accent); padding: 3px 10px; border-radius: var(--r-pill); }
+    .hero-title { font-family: var(--font-display); font-size: 32px; line-height: 1.25; margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+    .hero-title .kw { color: var(--accent); }
+    .hero-sub { font-size: 14px; color: var(--fg-muted); margin-top: 14px; line-height: 1.7; max-width: 720px; }
+    .hero-sub strong { color: var(--fg-primary); font-weight: 500; }
+    .hero-stats { display: flex; gap: var(--s-8); margin-top: var(--s-6); flex-wrap: wrap; }
+    .stat { border-left: 2px solid var(--border); padding-left: 14px; min-width: 88px; position: relative; cursor: help; }
+    .stat:hover { border-left-color: var(--accent); }
+    .stat .k { font-size: 10px; color: var(--fg-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .stat .v { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; font-weight: 500; }
+    .stat .v.pos { color: var(--success); }
+    .stat .v.neg { color: var(--danger); }
+    .stat .tip { position: absolute; bottom: calc(100% + 8px); left: -4px; background: #000; border: 1px solid var(--border-strong); color: var(--fg-primary); padding: 6px 10px; border-radius: var(--r-md); font-size: 11px; white-space: nowrap; line-height: 1.4; opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 5; text-transform: none; letter-spacing: normal; }
+    .stat:hover .tip { opacity: 1; }
+
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-5) var(--s-6); margin-bottom: var(--s-4); }
+    .card-title { font-size: 15px; font-weight: 500; margin: 0 0 4px 0; }
+    .card-sub { font-size: 12px; color: var(--fg-muted); margin: 0 0 var(--s-4) 0; }
+    .analysis-grid { display: grid; grid-template-columns: 1fr 320px; gap: var(--s-4); margin-bottom: var(--s-4); }
+
+    .chart-wrap { position: relative; margin-top: 4px; }
+    .chart-svg { display: block; width: 100%; }
+    .chart-tooltip { position: absolute; background: #000; border: 1px solid var(--border-strong); padding: var(--s-2) 10px; border-radius: var(--r-md); font-size: 11px; color: var(--fg-primary); line-height: 1.4; pointer-events: none; opacity: 0; transition: opacity .1s; white-space: nowrap; z-index: 4; }
+    .chart-tooltip.show { opacity: 1; }
+    .chart-tooltip .meta { color: var(--fg-muted); font-size: 10px; margin-top: 3px; }
+    .chart-legend { display: flex; gap: var(--s-5); margin-top: 10px; font-size: 11px; color: var(--fg-muted); flex-wrap: wrap; }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+    .swatch.dashed { background: transparent; border: 1px dashed var(--warning); height: 2px; width: 14px; border-radius: 0; }
+
+    @keyframes pulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
+    .now-pulse { transform-origin: center; transform-box: fill-box; animation: pulse 2s ease-out infinite; }
+    .news-marker { cursor: pointer; }
+
+    .news { display: flex; flex-direction: column; }
+    .news-item { display: flex; gap: 14px; align-items: flex-start; padding: var(--s-3); border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; border-radius: var(--r-md); margin: 0 calc(-1 * var(--s-3)); transition: background .15s; }
+    .news-item:hover { background: var(--bg-accent-bg); }
+    .news-item:last-child { border-bottom: none; }
+    .news-idx { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--bg-page); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-top: 1px; }
+    .news-body { flex: 1; min-width: 0; }
+    .news-body .t { color: var(--fg-primary); line-height: 1.45; font-weight: 500; }
+    .news-body .meta { color: var(--fg-muted); font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .impact-chip { background: var(--bg-muted); padding: 1px var(--s-2); border-radius: var(--r-pill); border: 1px solid var(--border); font-size: 10px; }
+    .impact-chip.high { color: var(--danger); border-color: rgba(244,68,68,0.4); background: rgba(244,68,68,0.08); }
+    .impact-chip.mid { color: var(--warning); border-color: rgba(255,176,0,0.4); background: rgba(255,176,0,0.08); }
+    .impact-chip.low { color: var(--fg-muted); }
+
+    details { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); margin-top: var(--s-3); }
+    details[open] { border-color: var(--border-strong); }
+    summary { padding: 14px var(--s-5); cursor: pointer; font-size: 14px; font-weight: 500; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: '▾'; color: var(--fg-muted); font-size: 11px; transition: transform .2s; flex-shrink: 0; }
+    details[open] summary::after { transform: rotate(180deg); }
+    details > .body { padding: 0 var(--s-5) var(--s-5); font-size: 13px; line-height: 1.75; color: var(--fg-muted); }
+    details > .body p { margin: 0 0 var(--s-3) 0; }
+    details > .body strong { color: var(--fg-primary); font-weight: 500; }
+    details > .body ul { padding-left: var(--s-5); margin: 0 0 var(--s-3); }
+    details > .body li { margin-bottom: 6px; }
+    .drift-block { background: var(--bg-muted); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s-3) 14px; margin-bottom: var(--s-3); }
+    .drift-block .head { font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin-bottom: 6px; }
+    .drift-block .txt { color: var(--fg-primary); }
+
+    .footer { text-align: center; color: var(--fg-muted); font-size: 11px; padding: var(--s-4); border-top: 1px solid var(--border); margin-top: var(--s-8); }
+
+    .status-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 64px var(--s-6); text-align: center; margin-bottom: var(--s-4); }
+    .status-box .icon { width: 52px; height: 52px; margin: 0 auto var(--s-4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .status-box .icon.loading { background: var(--primary-soft); color: var(--primary); animation: spin 1.2s linear infinite; }
+    .status-box .icon.empty { background: var(--bg-muted); color: var(--fg-muted); border: 1px solid var(--border); }
+    .status-box .icon.error { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(244,68,68,0.3); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-box .title { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+    .status-box .desc { font-size: 13px; color: var(--fg-muted); max-width: 440px; margin: 0 auto var(--s-5); line-height: 1.7; }
+    .retry-btn { padding: var(--s-2) var(--s-5); background: var(--primary); color: #000; border: none; border-radius: var(--r-pill); font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font-sans); }
+    .retry-btn:hover { filter: brightness(1.08); }
+
+    .chart-skeleton { height: 260px; background: linear-gradient(90deg, var(--bg-muted) 0%, var(--bg-accent-bg) 50%, var(--bg-muted) 100%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; border-radius: var(--r-md); }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .news-degraded-notice { padding: var(--s-5); background: rgba(255,176,0,0.08); border: 1px solid rgba(255,176,0,0.3); border-radius: var(--r-md); color: var(--warning); font-size: 12px; line-height: 1.7; }
+    .news-degraded-notice .title { font-weight: 500; color: var(--warning); margin-bottom: 6px; }
+    .news-degraded-notice code { background: var(--bg-muted); padding: 1px 6px; border-radius: 4px; color: var(--warning); font-size: 11px; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 1100px) { .analysis-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) {
+      .page { padding: var(--s-4); }
+      .nav { padding: 0 var(--s-4); }
+      .crumbs { display: none; }
+      .hero { padding: var(--s-5); }
+      .hero-title { font-size: 24px; }
+      .h1 { font-size: 22px; }
+      .hero-stats { gap: var(--s-5); }
+      .popover { width: calc(100vw - 32px); left: 16px; right: 16px; }
+      .cta-execute { font-size: 14px; }
+      .state-switcher .lbl { display: none; }
+      .card { padding: var(--s-4); }
+    }
+    @media (max-width: 480px) {
+      .hero-title { font-size: 20px; }
+      .hero-sub { font-size: 13px; }
+      .hero-stats { gap: var(--s-4); }
+      .stat { min-width: 72px; }
+      .stat .v { font-size: 18px; }
+      .tabs { flex-wrap: wrap; }
+      .title-row .share-btn { margin-left: 0; order: 10; }
+      .cta-bar { padding: 6px; gap: 6px; }
+      .cta-history { padding: 0 14px; font-size: 12px; }
+      .meta-bar { font-size: 10px; gap: 6px; }
+      .chart-legend { font-size: 10px; gap: var(--s-3); }
+      .state-switcher { gap: 4px; }
+      .ss-btn { padding: 0 7px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 背景辐射装饰 -->
+  <div class="radial-deco" aria-hidden="true">
+    <svg viewBox="0 0 800 600" preserveAspectRatio="xMaxYMin slice">
+      <g stroke="rgba(255,255,255,0.05)" stroke-width="1" fill="none">
+        <line x1="800" y1="0" x2="300" y2="120" />
+        <line x1="800" y1="0" x2="350" y2="180" />
+        <line x1="800" y1="0" x2="380" y2="240" />
+        <line x1="800" y1="0" x2="400" y2="300" />
+        <line x1="800" y1="0" x2="410" y2="360" />
+        <line x1="800" y1="0" x2="420" y2="420" />
+        <line x1="800" y1="0" x2="430" y2="480" />
+        <line x1="800" y1="0" x2="440" y2="540" />
+        <line x1="800" y1="0" x2="460" y2="600" />
+        <line x1="800" y1="0" x2="520" y2="600" />
+        <line x1="800" y1="0" x2="580" y2="600" />
+        <line x1="800" y1="0" x2="640" y2="600" />
+        <line x1="800" y1="0" x2="700" y2="600" />
+        <line x1="800" y1="0" x2="760" y2="600" />
+      </g>
+      <g stroke="rgba(255,255,255,0.03)" stroke-width="1" fill="none">
+        <line x1="800" y1="0" x2="200" y2="150" />
+        <line x1="800" y1="0" x2="150" y2="300" />
+        <line x1="800" y1="0" x2="100" y2="500" />
+      </g>
+    </svg>
+  </div>
+
+  <!-- Nav · data-binding: D01-D06 -->
+  <nav class="nav">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span>Antseer</span>
+    </div>
+    <div class="crumbs">
+      <span>首页</span>
+      <span class="sep">›</span>
+      <span>Skillhub</span>
+      <span class="sep">›</span>
+      <span class="cur">polymarket-drift-radar</span>
+    </div>
+    <div class="nav-right">
+      <div class="state-switcher" title="demo 演示态切换(仅 demo 阶段存在,S5 交付时去掉)">
+        <span class="lbl">状态</span>
+        <button class="ss-btn active" data-state="default">▸ 有数据</button>
+        <button class="ss-btn" data-state="loading">◷ 加载</button>
+        <button class="ss-btn" data-state="empty">⌀ 空</button>
+        <button class="ss-btn" data-state="error">! 错误</button>
+        <button class="ss-btn" data-state="degraded">⚠ 降级</button>
+      </div>
+      <span class="stage-chip">demo-v1 · 高保真</span>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <!-- Header · data-binding: D10-D16 -->
+    <header class="header">
+      <div class="title-row">
+        <h1 class="h1">polymarket-drift-radar</h1>
+        <span class="verified" data-binding="D11+D12">已认证</span>
+        <button class="share-btn">⇱ 分享</button>
+      </div>
+      <div class="tabs" data-binding="D14+D15+D16">
+        <div class="tab active" data-tab="execute">▸ 在线执行</div>
+        <div class="tab" data-tab="detail">≡ Skill 详情</div>
+      </div>
+    </header>
+
+    <!-- 主 CTA + 参数浮层 · data-binding: D20-D39 -->
+    <div class="cta-bar">
+      <button class="cta-execute" id="cta" data-binding="D20">▸ 执行 Skill</button>
+      <button class="cta-history" data-binding="D21">⟳ 历史</button>
+
+      <div class="popover" id="popover" role="dialog" aria-labelledby="popover-title">
+        <h4 class="popover-title" id="popover-title">
+          <span data-binding="D30">参数配置</span>
+          <button class="popover-close" id="popover-close" aria-label="关闭">✕</button>
+        </h4>
+        <div class="popover-field">
+          <label class="popover-label" data-binding="D31">事件<span class="req">*</span></label>
+          <input class="input" id="input-event" type="text"
+                 placeholder="Polymarket 链接或关键词"
+                 value="Will Trump win the 2024 election?"
+                 data-binding="D32+D33" />
+          <div class="popover-hint">粘贴 polymarket.com 链接或输入事件关键词</div>
+        </div>
+        <div class="popover-field">
+          <label class="popover-label" data-binding="D34">时间窗口<span class="req">*</span></label>
+          <div class="pill-group" data-binding="D35+D36">
+            <div class="pill" data-window="7D">7D</div>
+            <div class="pill active" data-window="30D">30D</div>
+          </div>
+        </div>
+        <button class="popover-sub-cta" id="popover-submit" data-binding="D37+D38+D39">▸ 执行 Skill</button>
+      </div>
+    </div>
+    <div class="popover-backdrop" id="popover-backdrop"></div>
+
+    <div id="output-zone">
+
+      <!-- ===== default 态 ===== -->
+      <div id="out-default">
+        <div class="meta-bar">
+          <span class="chip" data-binding="D40">DEMO</span>
+          <span class="chip" data-binding="D41">Polymarket</span>
+          <span class="chip" data-binding="D42" id="meta-window">30D</span>
+          <span class="chip num" data-binding="D43">2026/4/16</span>
+        </div>
+
+        <section class="hero">
+          <div class="hero-label" data-binding="D50">本次结论</div>
+          <h2 class="hero-title">
+            <span class="kw" data-binding="D51">回归入场窗口</span><br />
+            <span data-binding="D52">当前概率正从新闻脉冲峰值回落</span>
+          </h2>
+          <p class="hero-sub" data-binding="D53">
+            过去 30 天该市场出现 <strong class="num" data-binding="D54">2 次</strong> 新闻驱动的显著漂移,最近一次峰值概率 <span class="num" data-binding="D55">67.2%</span>。当前 <span class="num" data-binding="D56">62.4%</span>,历史上类似漂移在 72 小时内有 <span class="num" data-binding="D57">73%</span> 概率回归至 MA-20 附近(约 <span class="num" data-binding="D58">58.5%</span>)。
+          </p>
+          <div class="hero-stats">
+            <div class="stat" data-binding="D70+D76">
+              <div class="k">当前概率</div>
+              <div class="v num">62.4%</div>
+              <div class="tip">时序末尾点 · L3 脚本 take_last 从 D80 提取</div>
+            </div>
+            <div class="stat" data-binding="D71+D77">
+              <div class="k">24H 变化</div>
+              <div class="v num neg">−2.8pp</div>
+              <div class="tip">D70 − D72(24H 前) · pp = 百分点</div>
+            </div>
+            <div class="stat" data-binding="D73">
+              <div class="k">7D 波动率</div>
+              <div class="v num">4.1%</div>
+              <div class="tip">近 7 天概率标准差 × 100</div>
+            </div>
+            <div class="stat" data-binding="D74">
+              <div class="k">Z-Score</div>
+              <div class="v num">+1.2σ</div>
+              <div class="tip">(当前 − MA-20) / 20 期 σ</div>
+            </div>
+            <div class="stat" data-binding="D75">
+              <div class="k">30D 成交量</div>
+              <div class="v num">$48.2M</div>
+              <div class="tip">D81 量时序 30 天累加(USD)</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="analysis-grid">
+          <section class="card">
+            <h3 class="card-title" data-binding="D78">概率曲线 · <span id="chart-window">30</span> 天</h3>
+            <p class="card-sub" data-binding="D79">带新闻节点标注 · 异常区间标红 · Bollinger 20/2 上下轨</p>
+            <div class="chart-wrap">
+              <svg id="prob-chart" class="chart-svg" viewBox="0 0 900 300" height="260"
+                   preserveAspectRatio="none"
+                   data-binding="D80+D82+D84+D85+D87+D91+D92+D93+D89"></svg>
+              <svg id="vol-chart" class="chart-svg" viewBox="0 0 900 80" height="72"
+                   preserveAspectRatio="none" style="margin-top: 4px"
+                   data-binding="D81+D94+D95+D96"></svg>
+              <div class="chart-tooltip" id="chart-tip"></div>
+            </div>
+            <div class="chart-legend" data-binding="D97">
+              <span><span class="swatch" style="background:var(--accent)"></span>概率</span>
+              <span><span class="swatch dashed"></span>Bollinger 20/2 带</span>
+              <span><span class="swatch" style="background:var(--danger-soft);border:1px solid rgba(244,68,68,0.4)"></span>漂移异常区间</span>
+              <span><span class="swatch" style="background:var(--accent);border-radius:50%"></span>新闻节点</span>
+              <span><span class="swatch" style="background:var(--danger-strong)"></span>量·异常时段</span>
+            </div>
+          </section>
+
+          <aside class="card">
+            <h3 class="card-title" data-binding="D100">关键新闻节点</h3>
+            <p class="card-sub" data-binding="D101">按时间排序 · 与概率跳变时点对齐</p>
+            <div class="news" id="news-list"
+                 data-binding="D102+D103+D104+D105+D106+D107+D108+D109+D110"></div>
+          </aside>
+        </div>
+
+        <section>
+          <details open data-binding="D120+D121+D122+D123+D124+D125">
+            <summary>为什么给出「<span style="color:var(--accent)">回归入场</span>」的结论?</summary>
+            <div class="body">
+              <div class="drift-block" data-binding="D122">
+                <div class="head">第 1 次漂移 · 11/15 – 11/18</div>
+                <div class="txt">概率从 <strong class="num">59.2%</strong> 跳至 <strong class="num">71.8%</strong>,对应 <strong>最高法院驳回计票申诉</strong>新闻。峰值后 48 小时内回落至 <strong class="num">64.1%</strong>(MA-20 附近)。</div>
+              </div>
+              <div class="drift-block" data-binding="D122">
+                <div class="head">第 2 次漂移 · 当前区间</div>
+                <div class="txt">概率从 <strong class="num">59.8%</strong> 跳至 <strong class="num">67.2%</strong>,对应 <strong>关键摇摆州选民讲话</strong>新闻。当前已回落至 <strong class="num">62.4%</strong>,处于回归通道中段。</div>
+              </div>
+              <p data-binding="D123">历史上两段类似漂移模式,<strong>在第二次回归期入场的 72 小时命中率为 73%</strong>(样本 n=31,来自过去 12 个月同类政治市场)。当前 Z-Score +1.2σ 仍处"可交易回归"区间;若 24 小时内跌破 MA-20(58.5%),则回归失败,应止损。</p>
+            </div>
+          </details>
+
+          <details data-binding="D130+D131+D132+D133">
+            <summary>方法论 · 漂移是怎么识别的?</summary>
+            <div class="body">
+              <p data-binding="D131"><strong>漂移定义</strong>:概率突破 Bollinger 上/下轨(MA-20 ± 2σ)并维持 ≥ 24 小时。短于 24 小时的视为流动性噪音,自动过滤。</p>
+              <p data-binding="D132"><strong>新闻节点来源</strong>:从 <code style="background:var(--bg-muted);padding:1px 6px;border-radius:4px;color:var(--warning);font-size:12px">ant_news.by_market</code> 按市场 ID 检索,按影响度过滤 Top 3。影响度规则:high = NYT/Reuters/Bloomberg 且互动 >1000;mid = 白名单来源或互动 >500。</p>
+              <p data-binding="D133"><strong>入场判定</strong>:峰值后概率开始回落 + Z-Score 从 |2σ| 向 0 方向移动 → 标注「回归入场窗口」。若 Z-Score 持续扩大或反向突破,则标注「继续偏离」或「观望」。</p>
+            </div>
+          </details>
+
+          <details data-binding="D140+D141+D142+D143+D144">
+            <summary>风险提示</summary>
+            <div class="body">
+              <ul>
+                <li data-binding="D141"><strong>本工具只做分析辅助</strong>,不构成投资建议。Polymarket 市场本身存在归零、延迟结算、流动性不足等风险。</li>
+                <li data-binding="D142"><strong>历史模式不保证未来重复</strong>:黑天鹅事件(重大司法/政治/战争)可能打破回归模式,此时 Z-Score 会持续扩大而非收敛。</li>
+                <li data-binding="D143"><strong>小盘市场漂移可能是操纵</strong>:若日成交量 &lt; $100k,应警惕单笔大单制造假信号,建议忽略本 Skill 的判断。</li>
+                <li data-binding="D144"><strong>建议多源交叉</strong>:不要仅凭本工具下单,交叉参考真实新闻、盘面深度与对手盘质量。</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+      </div>
+
+      <!-- ===== Loading 态 · data-binding: D150 ===== -->
+      <div id="out-loading" class="hidden">
+        <div class="meta-bar">
+          <span class="chip">DEMO</span>
+          <span class="chip">Polymarket</span>
+          <span class="chip">30D</span>
+        </div>
+        <div class="status-box" data-binding="D150">
+          <div class="icon loading">◷</div>
+          <div class="title">正在分析漂移模式...</div>
+          <div class="desc">正在拉取 30 天概率时序、计算 Bollinger 带、对齐新闻节点。通常需要 3–5 秒。</div>
+        </div>
+        <div class="card">
+          <div class="chart-skeleton"></div>
+        </div>
+      </div>
+
+      <!-- ===== Empty 态 · data-binding: D151 ===== -->
+      <div id="out-empty" class="hidden">
+        <div class="meta-bar">
+          <span class="chip">DEMO</span>
+          <span class="chip">Polymarket</span>
+          <span class="chip">30D</span>
+        </div>
+        <div class="status-box" data-binding="D151">
+          <div class="icon empty">⌀</div>
+          <div class="title">未找到匹配的 Polymarket 市场</div>
+          <div class="desc">
+            你输入的关键词或链接没有命中任何 Polymarket 市场。建议:<br/>
+            · 检查关键词拼写(英文市场需用英文关键词)<br/>
+            · 缩短为核心事件词(如 "Trump 2024" 而非完整标题)<br/>
+            · 粘贴完整的 polymarket.com/event/... 链接
+          </div>
+          <button class="retry-btn" onclick="document.getElementById('cta').click()">▸ 重新输入</button>
+        </div>
+      </div>
+
+      <!-- ===== Error 态 · data-binding: D153+D154 ===== -->
+      <div id="out-error" class="hidden">
+        <div class="meta-bar">
+          <span class="chip">DEMO</span>
+          <span class="chip">Polymarket</span>
+          <span class="chip">30D</span>
+        </div>
+        <div class="status-box" data-binding="D153+D154">
+          <div class="icon error">!</div>
+          <div class="title">数据源暂时不可用</div>
+          <div class="desc">
+            Polymarket API 返回异常(超时或 500)。这通常是临时性问题。<br/>
+            若持续出现,可稍后重试或切换到 7D 窗口(数据量更小,成功率更高)。
+          </div>
+          <button class="retry-btn" onclick="window.setState('default')">⟳ 重试</button>
+        </div>
+      </div>
+
+      <!-- ===== Degraded 态(GAP-01 未实现)· data-binding: D155 ===== -->
+      <div id="out-degraded" class="hidden">
+        <div class="meta-bar">
+          <span class="chip">DEMO</span>
+          <span class="chip">Polymarket</span>
+          <span class="chip">30D</span>
+          <span class="chip num">2026/4/16</span>
+        </div>
+        <section class="hero">
+          <div class="hero-label">本次结论</div>
+          <h2 class="hero-title">
+            <span class="kw">回归入场窗口</span><br />
+            概率正从 2σ 偏离位置回落
+          </h2>
+          <p class="hero-sub">
+            过去 30 天该市场出现 <strong class="num">2 次</strong> 显著漂移(概率突破 Bollinger 2σ 带),最近一次峰值 <span class="num">67.2%</span>。当前 <span class="num">62.4%</span>,Z-Score +1.2σ,处于回归通道中段,目标位 MA-20 附近 <span class="num">58.5%</span>。
+          </p>
+          <div class="hero-stats">
+            <div class="stat"><div class="k">当前概率</div><div class="v num">62.4%</div></div>
+            <div class="stat"><div class="k">24H 变化</div><div class="v num neg">−2.8pp</div></div>
+            <div class="stat"><div class="k">7D 波动率</div><div class="v num">4.1%</div></div>
+            <div class="stat"><div class="k">Z-Score</div><div class="v num">+1.2σ</div></div>
+            <div class="stat"><div class="k">30D 成交量</div><div class="v num">$48.2M</div></div>
+          </div>
+        </section>
+        <div class="analysis-grid">
+          <section class="card">
+            <h3 class="card-title">概率曲线 · 30 天</h3>
+            <p class="card-sub">异常区间标红 · Bollinger 20/2 上下轨 · <span style="color:var(--warning)">新闻层暂不可用</span></p>
+            <div class="chart-wrap">
+              <svg id="prob-chart-degraded" class="chart-svg" viewBox="0 0 900 300" height="260" preserveAspectRatio="none"></svg>
+              <svg id="vol-chart-degraded" class="chart-svg" viewBox="0 0 900 80" height="72" preserveAspectRatio="none" style="margin-top: 4px"></svg>
+            </div>
+            <div class="chart-legend">
+              <span><span class="swatch" style="background:var(--accent)"></span>概率</span>
+              <span><span class="swatch dashed"></span>Bollinger 20/2 带</span>
+              <span><span class="swatch" style="background:var(--danger-soft);border:1px solid rgba(244,68,68,0.4)"></span>漂移异常区间</span>
+              <span><span class="swatch" style="background:var(--danger-strong)"></span>量·异常时段</span>
+            </div>
+          </section>
+          <aside class="card">
+            <h3 class="card-title">关键新闻节点</h3>
+            <p class="card-sub">降级模式</p>
+            <div class="news-degraded-notice" data-binding="D155">
+              <div class="title">⚠ 新闻源暂不可用</div>
+              新闻按市场检索接口(<code>ant_news.by_market</code>)尚未接入,本次仅展示概率曲线与异常标红。
+              概率异常区间的识别与回归判定不受影响。
+            </div>
+          </aside>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer" data-binding="D160">
+      demo-v1 · Powered by Antseer.ai
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // Mock 数据(严格按 PRD 附录 A schema)
+    // ============================================================
+    function generateMockData() {
+      const now = new Date('2026-04-16T12:00:00Z').getTime();
+      const hour = 3600 * 1000;
+      const points = 30 * 24;
+      const probs = [];
+      const vols = [];
+      const baseline = 0.595;
+
+      for (let i = 0; i < points; i++) {
+        const t = new Date(now - (points - 1 - i) * hour).toISOString();
+        let prob = baseline + Math.sin(i * 0.07) * 0.012 + (Math.random() - 0.5) * 0.008;
+        let vol = 28000 + Math.random() * 22000;
+
+        if (i >= 110 && i <= 180) {
+          const phase = (i - 110) / 70;
+          const peak = 0.72;
+          prob = baseline + (peak - baseline) * Math.sin(phase * Math.PI) + (Math.random() - 0.5) * 0.006;
+          vol = (phase < 0.3 ? 95000 : phase < 0.7 ? 140000 : 70000) + Math.random() * 30000;
+        } else if (i > 180 && i < 260) {
+          const dp = (i - 180) / 80;
+          prob = 0.64 - dp * 0.05 + (Math.random() - 0.5) * 0.008;
+        } else if (i >= 610 && i <= 700) {
+          const phase = (i - 610) / 90;
+          const peak = 0.672;
+          if (phase < 0.5) {
+            prob = baseline + (peak - baseline) * (phase * 2) + (Math.random() - 0.5) * 0.006;
+          } else {
+            prob = peak - (peak - 0.624) * ((phase - 0.5) * 2) + (Math.random() - 0.5) * 0.006;
+          }
+          vol = (phase < 0.3 ? 105000 : phase < 0.6 ? 155000 : 85000) + Math.random() * 25000;
+        } else if (i > 700) {
+          const tp = (i - 700) / 20;
+          prob = 0.624 - tp * 0.002 + (Math.random() - 0.5) * 0.004;
+        }
+
+        probs.push({ t: t, prob: Math.max(0.4, Math.min(0.8, prob)) });
+        vols.push({ t: t, volume: Math.round(vol) });
+      }
+      return { probs: probs, vols: vols };
+    }
+
+    function rollingBands(data, N) {
+      N = N || 20;
+      const out = [];
+      for (let i = 0; i < data.length; i++) {
+        if (i < N - 1) {
+          out.push({ t: data[i].t, ma: null, upper: null, lower: null });
+          continue;
+        }
+        let sum = 0;
+        for (let k = i - N + 1; k <= i; k++) sum += data[k].prob;
+        const ma = sum / N;
+        let sq = 0;
+        for (let k = i - N + 1; k <= i; k++) sq += (data[k].prob - ma) * (data[k].prob - ma);
+        const std = Math.sqrt(sq / N);
+        out.push({ t: data[i].t, ma: ma, upper: ma + 2 * std, lower: ma - 2 * std });
+      }
+      return out;
+    }
+
+    function segmentAnomaly(data, bands, minHours) {
+      minHours = minHours || 24;
+      const flags = data.map(function(d, i) {
+        return bands[i].upper != null && (d.prob > bands[i].upper || d.prob < bands[i].lower);
+      });
+      const segs = [];
+      let start = -1;
+      for (let i = 0; i < flags.length; i++) {
+        if (flags[i] && start < 0) start = i;
+        if (!flags[i] && start >= 0) {
+          if (i - start >= minHours) segs.push({ start: start, end: i - 1 });
+          start = -1;
+        }
+      }
+      if (start >= 0 && flags.length - start >= minHours) segs.push({ start: start, end: flags.length - 1 });
+      return segs;
+    }
+
+    // ============================================================
+    // 渲染
+    // ============================================================
+    const data = generateMockData();
+    const bands = rollingBands(data.probs, 20);
+    const drifts = segmentAnomaly(data.probs, bands, 24);
+
+    const W = 900, H = 300, PADL = 40, PADR = 20, PADT = 30, PADB = 20;
+    const innerW = W - PADL - PADR;
+    const innerH = H - PADT - PADB;
+    const yMin = 0.42, yMax = 0.78;
+    const xAt = function(i) { return PADL + (i / (data.probs.length - 1)) * innerW; };
+    const yAt = function(p) { return PADT + (1 - (p - yMin) / (yMax - yMin)) * innerH; };
+
+    function renderProbChart(svgId, opts) {
+      opts = opts || {};
+      const svg = document.getElementById(svgId);
+      if (!svg) return;
+      svg.innerHTML = '';
+      const NS = 'http://www.w3.org/2000/svg';
+      const mk = function(tag, attrs) {
+        const el = document.createElementNS(NS, tag);
+        for (const k in (attrs || {})) el.setAttribute(k, attrs[k]);
+        return el;
+      };
+
+      [0.75, 0.65, 0.55, 0.45].forEach(function(p) {
+        const y = yAt(p);
+        svg.appendChild(mk('line', { x1: PADL, y1: y, x2: W - PADR, y2: y, stroke: 'rgba(255,255,255,0.06)' }));
+        const t = mk('text', { x: 8, y: y + 4, fill: '#8a8885', 'font-size': '10', 'font-family': 'Inter' });
+        t.textContent = Math.round(p * 100) + '%';
+        svg.appendChild(t);
+      });
+
+      drifts.forEach(function(seg) {
+        svg.appendChild(mk('rect', {
+          x: xAt(seg.start), y: PADT,
+          width: xAt(seg.end) - xAt(seg.start),
+          height: innerH,
+          fill: 'rgba(244,68,68,0.10)'
+        }));
+      });
+
+      let upperD = '', lowerD = '';
+      let upStart = false, loStart = false;
+      bands.forEach(function(b, i) {
+        if (b.upper != null) {
+          upperD += (upStart ? ' L' : 'M') + ' ' + xAt(i).toFixed(1) + ',' + yAt(b.upper).toFixed(1);
+          upStart = true;
+        } else { upStart = false; }
+        if (b.lower != null) {
+          lowerD += (loStart ? ' L' : 'M') + ' ' + xAt(i).toFixed(1) + ',' + yAt(b.lower).toFixed(1);
+          loStart = true;
+        } else { loStart = false; }
+      });
+      svg.appendChild(mk('path', { d: upperD, stroke: 'rgba(255,176,0,0.3)', 'stroke-width': '1', 'stroke-dasharray': '3,4', fill: 'none' }));
+      svg.appendChild(mk('path', { d: lowerD, stroke: 'rgba(255,176,0,0.3)', 'stroke-width': '1', 'stroke-dasharray': '3,4', fill: 'none' }));
+
+      const probD = data.probs.map(function(d, i) {
+        return (i === 0 ? 'M' : 'L') + ' ' + xAt(i).toFixed(1) + ',' + yAt(d.prob).toFixed(1);
+      }).join(' ');
+      svg.appendChild(mk('path', {
+        d: probD, stroke: 'var(--accent)', 'stroke-width': '2', fill: 'none',
+        'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+      }));
+
+      if (!opts.noNews) {
+        const newsNodes = [
+          { idx: 1, at: 125, title: 'Supreme Court rules on ballot challenge', meta: 'CNN · 11/15 14:00 UTC' },
+          { idx: 2, at: 625, title: 'Key swing-state voter address aired', meta: 'Reuters · 04/08 09:00 UTC' },
+          { idx: 3, at: 685, title: 'Campaign fundraising disclosure released', meta: 'Bloomberg · 04/13 16:00 UTC' }
+        ];
+        newsNodes.forEach(function(n) {
+          const x = xAt(n.at);
+          const g = mk('g', { class: 'news-marker' });
+          g.appendChild(mk('line', { x1: x, y1: PADT, x2: x, y2: H - PADB, stroke: 'var(--accent)', 'stroke-width': '1', 'stroke-dasharray': '2,3', opacity: '0.55' }));
+          g.appendChild(mk('circle', { cx: x, cy: 14, r: 14, fill: 'var(--accent)', opacity: '0.2' }));
+          g.appendChild(mk('circle', { cx: x, cy: 14, r: 10, fill: 'var(--accent)' }));
+          const text = mk('text', { x: x, y: 18, 'text-anchor': 'middle', 'font-size': '11', fill: '#080807', 'font-weight': '700', 'font-family': 'Inter' });
+          text.textContent = n.idx;
+          g.appendChild(text);
+          g.dataset.title = n.title;
+          g.dataset.meta = n.meta;
+          svg.appendChild(g);
+        });
+      }
+
+      const lastX = xAt(data.probs.length - 1);
+      const lastY = yAt(data.probs[data.probs.length - 1].prob);
+      svg.appendChild(mk('circle', { cx: lastX, cy: lastY, r: 8, fill: 'var(--primary)', class: 'now-pulse', opacity: '0.5' }));
+      svg.appendChild(mk('circle', { cx: lastX, cy: lastY, r: 5, fill: 'var(--primary)' }));
+      const nl = mk('text', { x: lastX, y: lastY + 22, 'text-anchor': 'middle', fill: 'var(--primary)', 'font-size': '10', 'font-family': 'Inter', 'font-weight': '500' });
+      nl.textContent = 'NOW';
+      svg.appendChild(nl);
+    }
+
+    function renderVolChart(svgId) {
+      const svg = document.getElementById(svgId);
+      if (!svg) return;
+      svg.innerHTML = '';
+      const NS = 'http://www.w3.org/2000/svg';
+      const mk = function(tag, attrs) {
+        const el = document.createElementNS(NS, tag);
+        for (const k in (attrs || {})) el.setAttribute(k, attrs[k]);
+        return el;
+      };
+
+      const VW = 900, VH = 80;
+      const vInnerW = VW - PADL - PADR;
+
+      const lbl = mk('text', { x: 0, y: 14, fill: '#8a8885', 'font-size': '10', 'font-family': 'Inter' });
+      lbl.textContent = '成交量';
+      svg.appendChild(lbl);
+
+      const maxVol = Math.max.apply(null, data.vols.map(function(v) { return v.volume; }));
+      const barGroupN = 60;
+      const stride = Math.floor(data.vols.length / barGroupN);
+      const barW = vInnerW / barGroupN - 1;
+
+      for (let i = 0; i < barGroupN; i++) {
+        const origIdx = i * stride;
+        let sum = 0, cnt = 0;
+        for (let k = origIdx; k < Math.min(origIdx + stride, data.vols.length); k++) { sum += data.vols[k].volume; cnt++; }
+        const v = cnt > 0 ? sum / cnt : 0;
+        const h = Math.max(2, (v / maxVol) * (VH - 22));
+        const inDrift = drifts.some(function(seg) { return origIdx >= seg.start && origIdx <= seg.end; });
+        const fill = inDrift ? 'var(--danger)' : 'var(--primary)';
+        const opacity = inDrift ? '0.75' : '0.4';
+        svg.appendChild(mk('rect', {
+          x: PADL + i * (barW + 1),
+          y: VH - h - 2,
+          width: barW,
+          height: h,
+          fill: fill,
+          opacity: opacity
+        }));
+      }
+    }
+
+    function renderNewsList() {
+      const list = document.getElementById('news-list');
+      if (!list) return;
+      const news = [
+        { idx: 1, title: 'Supreme Court rules on ballot challenge in key state', source: 'CNN', t: '26 天前', impact: 'high', url: 'https://cnn.com/example' },
+        { idx: 2, title: 'Key swing-state voter address aired on primetime', source: 'Reuters', t: '8 天前', impact: 'high', url: 'https://reuters.com/example' },
+        { idx: 3, title: 'Campaign fundraising disclosure released', source: 'Bloomberg', t: '3 天前', impact: 'mid', url: 'https://bloomberg.com/example' }
+      ];
+      const impactText = { high: '高影响', mid: '中影响', low: '低影响' };
+      list.innerHTML = news.map(function(n) {
+        return '<a class="news-item" href="' + n.url + '" target="_blank" rel="noopener">' +
+               '<div class="news-idx">' + n.idx + '</div>' +
+               '<div class="news-body">' +
+               '<div class="t">' + n.title + '</div>' +
+               '<div class="meta">' +
+               '<span>' + n.source + '</span><span>·</span><span>' + n.t + '</span>' +
+               '<span class="impact-chip ' + n.impact + '">' + impactText[n.impact] + '</span>' +
+               '</div></div></a>';
+      }).join('');
+    }
+
+    // 状态切换
+    window.setState = function(state) {
+      document.querySelectorAll('.state-switcher .ss-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.state === state);
+      });
+      ['default', 'loading', 'empty', 'error', 'degraded'].forEach(function(s) {
+        const el = document.getElementById('out-' + s);
+        if (el) el.classList.toggle('hidden', s !== state);
+      });
+      if (state === 'default') {
+        renderProbChart('prob-chart');
+        renderVolChart('vol-chart');
+        renderNewsList();
+      } else if (state === 'degraded') {
+        renderProbChart('prob-chart-degraded', { noNews: true });
+        renderVolChart('vol-chart-degraded');
+      }
+    };
+
+    // 交互
+    const cta = document.getElementById('cta');
+    const popover = document.getElementById('popover');
+    const backdrop = document.getElementById('popover-backdrop');
+    const popoverClose = document.getElementById('popover-close');
+    const popoverSubmit = document.getElementById('popover-submit');
+    const inputEvent = document.getElementById('input-event');
+
+    function openPopover() {
+      popover.classList.add('open');
+      backdrop.classList.add('open');
+      setTimeout(function() { inputEvent.focus(); }, 50);
+    }
+    function closePopover() {
+      popover.classList.remove('open');
+      backdrop.classList.remove('open');
+    }
+    cta.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (popover.classList.contains('open')) closePopover();
+      else openPopover();
+    });
+    popoverClose.addEventListener('click', closePopover);
+    backdrop.addEventListener('click', closePopover);
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && popover.classList.contains('open')) closePopover();
+    });
+
+    document.querySelectorAll('.popover .pill').forEach(function(p) {
+      p.addEventListener('click', function() {
+        p.parentElement.querySelectorAll('.pill').forEach(function(x) { x.classList.remove('active'); });
+        p.classList.add('active');
+        const mw = document.getElementById('meta-window');
+        const cw = document.getElementById('chart-window');
+        if (mw) mw.textContent = p.dataset.window;
+        if (cw) cw.textContent = p.dataset.window === '7D' ? '7' : '30';
+      });
+    });
+
+    function checkValidity() {
+      popoverSubmit.disabled = inputEvent.value.trim().length === 0;
+    }
+    inputEvent.addEventListener('input', checkValidity);
+    popoverSubmit.addEventListener('click', function() {
+      closePopover();
+      window.setState('loading');
+      setTimeout(function() { window.setState('default'); }, 2500);
+    });
+
+    document.querySelectorAll('.state-switcher .ss-btn').forEach(function(b) {
+      b.addEventListener('click', function() { window.setState(b.dataset.state); });
+    });
+
+    document.querySelectorAll('.tabs .tab').forEach(function(t) {
+      t.addEventListener('click', function() {
+        document.querySelectorAll('.tabs .tab').forEach(function(x) { x.classList.remove('active'); });
+        t.classList.add('active');
+      });
+    });
+
+    // 新闻节点 hover tooltip
+    const chartTip = document.getElementById('chart-tip');
+    document.addEventListener('mouseover', function(e) {
+      const marker = e.target.closest('.news-marker');
+      if (marker && chartTip) {
+        chartTip.innerHTML = '<div>' + marker.dataset.title + '</div><div class="meta">' + marker.dataset.meta + '</div>';
+        chartTip.classList.add('show');
+      }
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (chartTip && chartTip.classList.contains('show')) {
+        const chartWrap = document.querySelector('#out-default .chart-wrap');
+        if (!chartWrap) return;
+        const rect = chartWrap.getBoundingClientRect();
+        chartTip.style.left = (e.clientX - rect.left + 12) + 'px';
+        chartTip.style.top = (e.clientY - rect.top - 10) + 'px';
+      }
+    });
+    document.addEventListener('mouseout', function(e) {
+      const marker = e.target.closest('.news-marker');
+      if (marker && chartTip) chartTip.classList.remove('show');
+    });
+
+    // demo 态不真跳
+    document.addEventListener('click', function(e) {
+      const item = e.target.closest('.news-item');
+      if (item) e.preventDefault();
+    });
+
+    // init
+    window.setState('default');
+    checkValidity();
+  </script>
+</body>
+</html>

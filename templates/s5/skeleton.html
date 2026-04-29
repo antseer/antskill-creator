@@ -1,0 +1,292 @@
+<!--
+    AntSkill Demo Skeleton — v4
+    
+    Usage:
+      复制本骨架作为 S2 快速原型起点。
+      替换 {{ PLACEHOLDER }} 为实际 Skill 内容。
+      查 design-system/antseer-design-system.md 的 14 条硬约束。
+      在 visual-registry.md 登记选择的主色 / Display 字体 / Hero 类型。
+    
+    硬约束（14 条，G2 会检查）:
+      1. Background #080807，不允许冷灰
+      2. Card bg #1d1d1a
+      3. Border rgba(255,255,255,0.12)
+      4. 按钮 pill 圆角 9999px，卡片 8px
+      5. Inter 做正文
+      6. Display 字体从 display-font-pool.md 选未用过的
+      7. 主色从 color-pool.md 选未用过的
+      8. 核心数字 tabular-nums
+      9. 零 box-shadow
+      10. 零 Emoji
+      11. Hero ≤ 85vh
+      12. 左输入(280-320px) / 右输出 严格分栏
+      13. Loading / Empty / Error 三态齐全
+      14. 底部数据来源标注
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ SKILL_DISPLAY_NAME }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Display 字体：从 display-font-pool.md 选未用过的，替换下面这行 -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  /* ───── 基础色板（不要改）───── */
+  --bg:        #080807;
+  --bg-nav:   #0a0a0a;
+  --card:     #1d1d1a;
+  --muted:    #121210;
+  --accent:   #2a2926;
+  --fg:       #ffffff;
+  --fg-muted: #8a8885;
+  --border:   rgba(255,255,255,0.12);
+  --success:  #05df72;
+  --warning:  #ffb000;
+  --info:     #1196dd;
+  --danger:   #f44;
+
+  /* ───── 本 Skill 主色（从 color-pool.md 选）───── */
+  --primary:  #7c6aef;         /* TODO: 替换为未占用的主色 */
+  --primary-fg: #000000;
+
+  /* ───── Display 字体（从 display-font-pool.md 选）───── */
+  --font-display: 'Cormorant Garamond', serif;  /* TODO: 替换 */
+  --font-ui:      'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───── Layout ───── */
+.app { display: flex; min-height: 100vh; max-width: 1440px; margin: 0 auto; }
+.input-panel {
+  width: 300px; flex-shrink: 0;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  padding: 24px 20px;
+}
+.output-panel { flex: 1; padding: 24px 32px; overflow-y: auto; }
+
+/* ───── Hero ───── */
+.hero { min-height: 50vh; max-height: 85vh; margin-bottom: 32px; }
+.hero-title {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+.hero-sub { color: var(--fg-muted); font-size: 16px; margin-bottom: 24px; }
+.hero-metric {
+  font-family: var(--font-display);
+  font-size: 72px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+
+/* ───── Card ───── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-label {
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  margin-bottom: 8px;
+}
+
+/* ───── Button ───── */
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-fg);
+  border: none;
+  border-radius: 9999px;
+  padding: 12px 24px;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-ui);
+}
+.btn-primary:hover { filter: brightness(1.1); }
+
+.btn-secondary {
+  background: var(--card);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ───── Input ───── */
+.input-group { margin-bottom: 16px; }
+.input-group label {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  margin-bottom: 6px;
+}
+.input-group input,
+.input-group select {
+  width: 100%;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+.input-group input:focus,
+.input-group select:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+/* ───── States ───── */
+.state-loading,
+.state-empty,
+.state-error {
+  display: none;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--fg-muted);
+}
+.state-error { color: var(--danger); }
+.state-active .state-loading,
+.state-active[data-state="empty"] .state-empty,
+.state-active[data-state="error"] .state-error { display: block; }
+
+/* ───── Footer ───── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 16px 32px;
+  font-size: 12px;
+  color: var(--fg-muted);
+  text-align: center;
+}
+
+/* ───── Responsive ───── */
+@media (max-width: 768px) {
+  .app { flex-direction: column; }
+  .input-panel { width: 100%; }
+  .hero-title { font-size: 32px; }
+  .hero-metric { font-size: 48px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ───── INPUT PANEL (左侧，固定) ───── -->
+  <aside class="input-panel">
+    <div class="card-label" style="margin-bottom: 20px;">PARAMETERS</div>
+    
+    <div class="input-group">
+      <label for="input-1">{{ INPUT_1_LABEL }}</label>
+      <input type="text" id="input-1" placeholder="{{ PLACEHOLDER_1 }}">
+    </div>
+    
+    <div class="input-group">
+      <label for="input-2">{{ INPUT_2_LABEL }}</label>
+      <select id="input-2">
+        <option value="opt1">{{ OPTION_1 }}</option>
+        <option value="opt2">{{ OPTION_2 }}</option>
+      </select>
+    </div>
+    
+    <button class="btn-primary" onclick="run()">▶ 开始分析</button>
+  </aside>
+
+  <!-- ───── OUTPUT PANEL (右侧，自适应) ───── -->
+  <main class="output-panel">
+    
+    <!-- Hero (先给结论) -->
+    <section class="hero">
+      <div class="card-label">推荐</div>
+      <h1 class="hero-title">{{ TOP_RECOMMENDATION }}</h1>
+      <p class="hero-sub">{{ ONE_LINE_WHY }}</p>
+      <div class="hero-metric">{{ CORE_METRIC }}</div>
+    </section>
+    
+    <!-- 论据层 -->
+    <section class="evidence">
+      <div class="card">
+        <div class="card-label">{{ EVIDENCE_LABEL }}</div>
+        <!-- TODO: 图表 / 对比表 / 时间轴 -->
+      </div>
+    </section>
+    
+    <!-- 信任层（可折叠） -->
+    <section class="trust">
+      <details>
+        <summary class="card-label" style="cursor: pointer;">方法论与风险提示</summary>
+        <div class="card">
+          <p>{{ METHODOLOGY }}</p>
+          <p style="color: var(--warning); margin-top: 12px;">
+            ⚠ 风险：{{ RISK_DISCLAIMER }}
+          </p>
+        </div>
+      </details>
+    </section>
+    
+    <!-- 状态 -->
+    <div class="state-loading">正在加载数据……</div>
+    <div class="state-empty">未找到匹配结果，请调整输入</div>
+    <div class="state-error">数据源暂时不可用，请稍后重试</div>
+    
+  </main>
+</div>
+
+<footer class="footer">
+  Mock Data — Powered by Antseer.ai · Prototype for demonstration only
+</footer>
+
+<script>
+// ───── Mock Data & Interaction ─────
+// 注意：不要用 localStorage/sessionStorage（违反 G2.A9）
+const state = { lastInput: null, mockData: null };
+
+function run() {
+  const v1 = document.getElementById('input-1').value;
+  const v2 = document.getElementById('input-2').value;
+  state.lastInput = { v1, v2 };
+  
+  // TODO: 调用 mock 数据生成器，更新 Hero / 论据层
+  console.log('Running with', state.lastInput);
+}
+
+// 初始化：默认状态下也要有内容，不要空白
+document.addEventListener('DOMContentLoaded', () => {
+  // TODO: 渲染默认态 Hero（引导语 + 示例结论）
+});
+</script>
+
+</body>
+</html>

@@ -7,11 +7,11 @@
 - 诚实
 - 可分享
 - 可上传 GitHub
-- 同事一看就知道这是 **Stage 1 需求型** 还是 **Stage 2 完整型**
+- 同事一看就知道这是 **Stage 1 半成品** 还是 **Stage 2 成品**
 
 ## Two lifecycle stages
 
-### 1. Stage 1 — Requirement Skill
+### 1. Stage 1 — Semi-finished Skill
 
 适用于：产品需求、PRD、前端/输出体验、后端能力、数据源依赖已经完整，但真实 MCP / API / 数据库尚未全部接入，当前用 mock 数据展示效果。
 
@@ -23,7 +23,7 @@
 - 每个 mock 未来由哪个 MCP / API / 数据库替换
 - 验收标准和 Stage 2 阻塞项
 
-### 2. Stage 2 — Complete Skill
+### 2. Stage 2 — Finished Skill
 
 适用于：Stage 1 的 mock 已经替换为真实数据源，MCP / API / 数据库覆盖全部用户主路径数据依赖，可以直接安装、运行、分享。
 
@@ -45,7 +45,7 @@
 - `README.zh.md`
 - `.gitignore`
 
-### Required for Stage 1 Requirement Skills
+### Required for Stage 1 Semi-finished Skills
 - `README.md` with `Data Reality`
 - `README.zh.md` with `数据真实性`
 - `REQUIREMENT-REVIEW.md`
@@ -53,7 +53,13 @@
 - `TECH-INTERFACE-REQUEST.md`
 - PRD / spec / prototype / frontend-backend-data plan
 
-### Required for Stage 2 Complete Skills
+Stage 1 has two shapes:
+- **Lite Semi-finished Package**: product/spec/prototype/data reality handoff.
+- **Antseer S5 Semi-finished Package**: Lite plus `data-inventory.md`, `mcp-audit.md`, `data-prd.md`, `skill-prd.md`, `review-report.md`, `frontend/index.html`, and `layers/L1-L5`.
+
+If S5 artifacts appear, the whole package must satisfy the S5 gate. Raw scaffold placeholders must fail validation until filled.
+
+### Required for Stage 2 Finished Skills
 - `README.md` with `Data Sources` and `Validation Evidence`
 - `README.zh.md` with `数据来源` and `验证证据`
 - `MCP-COVERAGE.md`
@@ -68,7 +74,7 @@
 
 ### Always include
 - what the package is for
-- whether it is Stage 1 Requirement or Stage 2 Complete
+- whether it is Stage 1 Semi-finished or Stage 2 Finished
 - what is already strong
 - what is still incomplete or verified
 - reading order or quick start
@@ -77,7 +83,7 @@
 - claim unfinished integrations are complete
 - hide critical missing dependencies
 - write English README and leave Chinese README as a stub
-- present a Stage 1 Requirement Skill as directly usable
+- present a Stage 1 Semi-finished Skill as directly usable
 - present a skill as Stage 2 before MCP / API / data coverage is verified
 
 ## Agent facade rules

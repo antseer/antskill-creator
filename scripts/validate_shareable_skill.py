@@ -10,11 +10,16 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import json
+import os
 import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# This validator rejects __pycache__ and *.pyc files as package junk. Make the
+# validator itself bytecode-free even when callers forget `python -B`.
+sys.dont_write_bytecode = True
 
 from quick_validate import validate_skill
 
@@ -25,6 +30,20 @@ REQUIREMENT_REQUIRED_FILES = [
     "REQUIREMENT-REVIEW.md",
     "TODO-TECH.md",
     "TECH-INTERFACE-REQUEST.md",
+]
+S5_REQUIRED_FILES = [
+    "VERSION",
+    "data-prd.md",
+    "skill-prd.md",
+    "review-report.md",
+    "frontend/index.html",
+]
+S5_REQUIRED_DIRS = [
+    "layers/L1-data",
+    "layers/L2-aggregation",
+    "layers/L3-compute",
+    "layers/L4-llm",
+    "layers/L5-presentation",
 ]
 COMPLETE_REQUIRED_FILES = [
     "VERSION",
@@ -82,6 +101,20 @@ PARAM_HINT_PATTERNS = [
     r"<[a-zA-Z_][a-zA-Z0-9_-]*>",
 ]
 RUN_CHECKS_FILE = "validation.checks.json"
+UNRESOLVED_PLACEHOLDER_PATTERNS = [
+    r"(^|\|)\s*TODO\s*(\||$)",
+    r":\s*TODO(\s|$)",
+    r"\bTODO MCP/API/database\b",
+    r"\bReplace this\b",
+    r"\{\{[^}]+\}\}",
+    r"\{skill-name\}",
+    r"\{remote-head-sha\}",
+    r"\{synced-at\}",
+    r"\{tool-name\}",
+    r"\{module-name\}",
+    r"\{one-line English value proposition\}",
+    r"\{一句话中文核心价值\}",
+]
 
 
 @dataclass
@@ -97,6 +130,16 @@ class ValidationReport:
 
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore") if path.exists() else ""
+
+
+def has_unresolved_placeholders(text: str) -> list[str]:
+    hits: list[str] = []
+    for i, line in enumerate(text.splitlines(), start=1):
+        for pattern in UNRESOLVED_PLACEHOLDER_PATTERNS:
+            if re.search(pattern, line, flags=re.IGNORECASE):
+                hits.append(f"line {i}: {line.strip()[:120]}")
+                break
+    return hits
 
 
 def has_junk(root: Path) -> list[str]:
@@ -176,6 +219,15 @@ def find_product_plan_artifacts(root: Path) -> list[str]:
         if any(fnmatch.fnmatch(p.name, pat) or fnmatch.fnmatch(rel, pat) for pat in PRODUCT_PLAN_PATTERNS):
             found.append(rel)
     return sorted(set(found))
+
+
+def product_plan_files(root: Path) -> list[Path]:
+    files: list[Path] = []
+    for rel in find_product_plan_artifacts(root):
+        p = root / rel
+        if p.is_file():
+            files.append(p)
+    return files
 
 
 def scan_user_path_mocks(root: Path) -> list[str]:
@@ -335,11 +387,13 @@ def run_executable_checks(root: Path) -> list[str]:
     if errors:
         return errors
     run_errors = []
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
     for check in checks:
         try:
             result = subprocess.run(
                 check["command"],
                 cwd=root,
+                env=env,
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -367,7 +421,7 @@ def validate_requirement(root: Path) -> list[str]:
 
     for rel in REQUIREMENT_REQUIRED_FILES:
         if not (root / rel).exists():
-            errors.append(f"Stage 1 requirement package missing: {rel}")
+            errors.append(f"Stage 1 semi-finished package missing: {rel}")
 
     if not contains_heading(readme, ["Data Reality"]):
         errors.append("README.md must contain a Data Reality section for Stage 1")
@@ -376,6 +430,20 @@ def validate_requirement(root: Path) -> list[str]:
 
     if not find_product_plan_artifacts(root):
         errors.append("Stage 1 requires at least one product plan artifact (PRD/spec/prototype/frontend/backend/docs)")
+
+    placeholder_files = [
+        root / "README.md",
+        root / "README.zh.md",
+        root / "SKILL.md",
+        root / "REQUIREMENT-REVIEW.md",
+        root / "TECH-INTERFACE-REQUEST.md",
+    ] + product_plan_files(root)
+    for p in placeholder_files:
+        if not p.exists() or not p.is_file():
+            continue
+        hits = has_unresolved_placeholders(read_text(p))
+        if hits:
+            errors.append(f"Unresolved placeholders in {p.relative_to(root)}: " + "; ".join(hits[:3]))
 
     lower = blob.lower()
     for claim in FALSE_DIRECT_USE_CLAIMS:
@@ -387,7 +455,55 @@ def validate_requirement(root: Path) -> list[str]:
         needed_terms = ["mcp", "api", "接口", "数据", "schema"]
         if not any(term in tech_request.lower() for term in needed_terms):
             errors.append("TECH-INTERFACE-REQUEST.md should list MCP/API/data/schema requirements")
+        if not re.search(r"\|.+\|.+\|.+\|", tech_request):
+            errors.append("TECH-INTERFACE-REQUEST.md should include concrete tables for data/interface requirements")
 
+    readme_hits = re.findall(r"\|\s*TODO\s*\|", readme, flags=re.IGNORECASE)
+    if readme_hits:
+        errors.append("README.md Data Reality appears to contain only template TODO rows")
+
+    errors.extend(validate_s5_semifinished(root))
+
+    return errors
+
+
+def validate_s5_semifinished(root: Path) -> list[str]:
+    """Validate the stricter Antseer S5 semi-finished structure when present.
+
+    Stage 1 Lite packages do not need this. If any S5-specific artifact exists,
+    the whole S5 handoff skeleton must be coherent.
+    """
+    markers = ["data-prd.md", "skill-prd.md", "frontend", "layers", "mcp-audit.md"]
+    if not any((root / m).exists() for m in markers):
+        return []
+
+    errors: list[str] = []
+    for rel in S5_REQUIRED_FILES:
+        if not (root / rel).exists():
+            errors.append(f"S5 semi-finished package missing: {rel}")
+    for rel in S5_REQUIRED_DIRS:
+        if not (root / rel).is_dir():
+            errors.append(f"S5 semi-finished package missing directory: {rel}")
+        elif not (root / rel / "README.md").exists():
+            errors.append(f"S5 layer missing README.md: {rel}")
+
+    for rel in ["data-prd.md", "skill-prd.md", "review-report.md", "mcp-audit.md"]:
+        p = root / rel
+        if p.exists():
+            hits = has_unresolved_placeholders(read_text(p))
+            if hits:
+                errors.append(f"Unresolved placeholders in {rel}: " + "; ".join(hits[:3]))
+
+    skill_prd = read_text(root / "skill-prd.md")
+    data_prd = read_text(root / "data-prd.md")
+    if (root / "skill-prd.md").exists():
+        for token in ["L1", "L2", "L3", "L4", "L5", "附录 A"]:
+            if token not in skill_prd:
+                errors.append(f"skill-prd.md must explicitly cover {token}")
+    if (root / "data-prd.md").exists():
+        for token in ["P0", "期望接口", "降级", "验收"]:
+            if token not in data_prd:
+                errors.append(f"data-prd.md must include {token}")
     return errors
 
 

@@ -2,17 +2,58 @@
   "checks": [
     {
       "name": "frontmatter validation",
-      "command": ["python", "-B", "scripts/quick_validate.py", "."],
+      "command": [
+        "python",
+        "-B",
+        "scripts/quick_validate.py",
+        "."
+      ],
+      "timeout_seconds": 30
+    },
+    {
+      "name": "stage gates and pipeline assets present",
+      "command": [
+        "python",
+        "-B",
+        "-c",
+        "from pathlib import Path; req=['PIPELINE.md','STAGE-GATES.md','scripts/sync_mcp_truth.py','methodology/core-principles.md','methodology/intent-anchoring.md','methodology/paradigms.md','methodology/responsibility-split.md','methodology/semi-finished-boundary.md','methodology/source-of-truth.md','sop/s0_requirement.md','sop/s1_data_inventory.md','sop/s2_routing_and_prd.md','sop/s3_html_design.md','sop/s4_review.md','sop/s5_skill_delivery.md','quality/overview.md','quality/G0_requirement.md','quality/G1_data_inventory.md','quality/G2_routing_and_prd.md','quality/G3_html_design.md','quality/G4_review.md','quality/G5_skill_delivery.md','mcp-capability-map/routing-decision-tree.md','templates/requirement/intent-card.md','templates/s5/data-inventory-template.md','templates/s5/mcp-audit-template.md','templates/s5/data-prd-template.md','templates/s5/skill-prd-template.md','templates/s5/review-report-template.md','templates/s5/skeleton.html']; missing=[x for x in req if not Path(x).exists()]; assert not missing, 'missing gate/pipeline assets: '+', '.join(missing)"
+      ],
+      "timeout_seconds": 30
+    },
+    {
+      "name": "raw scaffold intentionally fails until filled",
+      "command": [
+        "python",
+        "-B",
+        "-c",
+        "import subprocess,tempfile,sys; from pathlib import Path; root=Path.cwd(); d=Path(tempfile.mkdtemp()); subprocess.check_call([sys.executable,'scripts/scaffold_shareable_skill.py',str(d),'--skill-name','tmp-skill','--display-name','Tmp Skill','--stage','requirement'], stdout=subprocess.DEVNULL); r=subprocess.run([sys.executable,'-B','scripts/validate_shareable_skill.py',str(d),'--stage','requirement'], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE); assert r.returncode != 0, 'raw requirement scaffold should fail until placeholders are filled'"
+      ],
       "timeout_seconds": 30
     },
     {
       "name": "stage complete validation",
-      "command": ["python", "-B", "scripts/validate_shareable_skill.py", ".", "--stage", "complete"],
+      "command": [
+        "python",
+        "-B",
+        "scripts/validate_shareable_skill.py",
+        ".",
+        "--stage",
+        "complete"
+      ],
       "timeout_seconds": 30
     },
     {
       "name": "structured audit",
-      "command": ["python", "-B", "scripts/audit_skill.py", ".", "--stage", "complete", "--format", "json"],
+      "command": [
+        "python",
+        "-B",
+        "scripts/audit_skill.py",
+        ".",
+        "--stage",
+        "complete",
+        "--format",
+        "json"
+      ],
       "timeout_seconds": 30
     }
   ]

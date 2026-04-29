@@ -1,6 +1,6 @@
 ---
 name: skill-creator-rick
-description: "Convert local skills through a two-stage lifecycle: Stage 1 Requirement Skill with complete product plan and mock data, then Stage 2 Complete Skill with all mock data replaced by verified real MCP/data sources."
+description: "Convert local skills through a two-stage lifecycle and the original AntSkill Creator S0-S5 pipeline: Stage 1 Semi-finished Skill with complete product plan, mock/data-gap transparency, methodology, SOP, UI, and handoff docs; then Stage 2 Finished Skill with all mock data replaced by verified real MCP/data sources."
 compatibility: filesystem, python3, git
 ---
 
@@ -8,22 +8,74 @@ compatibility: filesystem, python3, git
 
 把一个本地 skill 按 **两阶段生命周期**整理、审计、补包和发布：
 
-1. **Stage 1 — Requirement Skill（需求型）**：产品方案完整，前端 / 后端 / 数据源依赖讲清楚，用 mock 数据展示效果，交付研发接手。
-2. **Stage 2 — Complete Skill（完整型）**：把 Stage 1 的 mock 全部替换为真实数据源，并验证 MCP / API 能覆盖全部数据依赖，可直接安装、运行、分享。
+1. **Stage 1 — Semi-finished Skill（半成品）**：产品方案完整，前端 / 后端 / 数据源依赖讲清楚，用 mock 数据展示效果，交付研发接手。
+2. **Stage 2 — Finished Skill（成品）**：把 Stage 1 的 mock 全部替换为真实数据源，并验证 MCP / API 能覆盖全部数据依赖，可直接安装、运行、分享。
+
+同时恢复并保留 AntSkill Creator 原始的 **S0-S5 流水线编排**：
+
+- S0 需求锚定 + 需求结晶 + 粗 Demo
+- S1 数据盘点
+- S2 MCP 真源同步 + 路由审计 + 双 PRD
+- S3 高保真 HTML
+- S4 HTML ↔ PRD Review
+- S5 Skill 半成品交付
+
+> 两阶段生命周期回答“这个包当前真实可用到什么程度”；S0-S5 流水线回答“从一个想法如何一步步做出可交付 skill”。两者是正交关系，不互相替代。
 
 ## Core promise
 
 这个 skill 不做“表面包装”。每次先回答三个现实问题：
 
-1. 当前包处在 **Stage 1 需求型**，还是 **Stage 2 完整型**？
+1. 当前包处在 **Stage 1 半成品**，还是 **Stage 2 成品**？
 2. 产品方案、前后端方案、数据依赖是否足够研发接手？
 3. 所有 mock 是否已经被真实 MCP / API / 数据库替换，并有验证证据？
 
 > `split` 是拆包动作，不是第三阶段。边界不清时，先 split，再分别进入 Stage 1 或 Stage 2。
 
+## Pipeline model（S0-S5）
+
+当用户是“从 0 创建 / 梳理一个新 Antseer 可视化 skill”时，优先走流水线；当用户是“review / validate / package 现有 skill”时，优先走 Stage gate。
+
+| Step | Goal | SOP | Gate | Output |
+|---|---|---|---|---|
+| S0 | 需求锚定 + 需求结晶 + 粗 Demo | `sop/s0_requirement.md` | `quality/G0_requirement.md` | intent-card.md + 需求画布 + demo-v0 |
+| S1 | 数据盘点，只列不判 | `sop/s1_data_inventory.md` | `quality/G1_data_inventory.md` | data-inventory.md |
+| S2 | MCP 真源同步 + 路由审计 + 双 PRD | `sop/s2_routing_and_prd.md` | `quality/G2_routing_and_prd.md` | mcp-audit.md + data-prd.md + skill-prd.md |
+| S3 | 高保真 HTML | `sop/s3_html_design.md` | `quality/G3_html_design.md` | demo-v1.html |
+| S4 | HTML ↔ PRD 双向对齐 | `sop/s4_review.md` | `quality/G4_review.md` | review-report.md |
+| S5 | Skill 半成品交付 | `sop/s5_skill_delivery.md` | `quality/G5_skill_delivery.md` | 完整 skill 目录 + handoff docs |
+
+完整说明见 `PIPELINE.md`。阶段门禁总表见 `STAGE-GATES.md`。方法论见 `methodology/`，其中 S0 需求锚定见 `methodology/intent-anchoring.md`；质量门禁见 `quality/`，MCP 路由决策树见 `mcp-capability-map/routing-decision-tree.md`。
+
+### Layer ownership model
+
+每个可见数据点必须归属到：
+
+| Layer | Owner | Meaning |
+|---|---|---|
+| L1-A | Existing MCP | MCP 已能直接提供 |
+| L1-B | Backend | 需要新建原始 MCP tool |
+| L2 | Backend | 需要新建聚合 MCP/API |
+| L3 | Skill | skill-local deterministic computation |
+| L4 | Skill | LLM structured interpretation + fallback |
+| L5 | Skill | frontend presentation |
+
+Stage 1 可以包含 L1-B / L2 缺口，但必须在 `TECH-INTERFACE-REQUEST.md` / `data-prd.md` 中写清接口契约；Stage 2 必须验证这些缺口已经被真实来源覆盖。
+
+### Stage 1 shapes
+
+Stage 1 有两个合法形态，不能混淆：
+
+| Shape | 用途 | 额外要求 |
+|---|---|---|
+| Lite Semi-finished Package | 轻量产品/工程提需包 | `REQUIREMENT-REVIEW.md`、`TODO-TECH.md`、`TECH-INTERFACE-REQUEST.md`、产品 spec/prototype |
+| Antseer S5 Semi-finished Package | 完整 Antseer 可视化 skill 半成品 | Lite 全部要求 + `data-inventory.md`、`mcp-audit.md`、`data-prd.md`、`skill-prd.md`、`review-report.md`、`frontend/index.html`、`layers/L1-L5` |
+
+如果包里出现任一 S5 产物，就按 S5 严格结构校验。脚手架刚生成时允许带 `{{FILL_BEFORE_VALIDATE}}` 占位，但占位未填完不得通过 Stage 1 validation，也不得上传为 share-ready。
+
 ## Stage model
 
-### Stage 1 — Requirement Skill（需求型）
+### Stage 1 — Semi-finished Skill（半成品）
 
 适用于：
 - 已有完整产品方案 / PRD / 用户流程
@@ -47,6 +99,7 @@ compatibility: filesystem, python3, git
 - `TODO-TECH.md`
 - `TECH-INTERFACE-REQUEST.md`：列出所有真实接口 / MCP / 数据源需求
 - 产品方案：PRD / spec / 用户流 / 原型 / 前后端说明，至少一种明确文档或目录
+- 不得保留未解决占位符：`TODO`、`Replace this`、`{{FILL_BEFORE_VALIDATE}}` 等
 
 `Data Reality` 必须回答：
 
@@ -58,10 +111,10 @@ compatibility: filesystem, python3, git
 | 资金费率历史数据 | Mock（硬编码 fixture） | 图表展示与回测示例 | mcp://market/funding-rate 或 GET /api/funding-rate/history | 是 |
 | BTC 价格 | Mock（随机生成） | 实时价格卡片 | mcp://market/ticker 或 WebSocket /ws/ticker | 是 |
 
-**重要**：当前 skill 是 Stage 1 Requirement Skill，mock 数据仅用于展示产品效果和交互逻辑，不能作为真实分析或交易依据。真实数据源需求见 `TECH-INTERFACE-REQUEST.md`。
+**重要**：当前 skill 是 Stage 1 Semi-finished Skill，mock 数据仅用于展示产品效果和交互逻辑，不能作为真实分析或交易依据。真实数据源需求见 `TECH-INTERFACE-REQUEST.md`。
 ```
 
-### Stage 2 — Complete Skill（完整型）
+### Stage 2 — Finished Skill（成品）
 
 适用于：
 - Stage 1 的 mock / fixture / stub 已全部替换为真实数据源
@@ -109,6 +162,11 @@ compatibility: filesystem, python3, git
 优先看：
 - `SKILL.md`
 - README / PRD / Stage 1 implementation docs
+- `PIPELINE.md`
+- `STAGE-GATES.md`
+- `methodology/`
+- `sop/`
+- `quality/`
 - frontend prototype / output UI
 - backend/data interface request
 - scripts / pipeline / tests
@@ -116,8 +174,8 @@ compatibility: filesystem, python3, git
 - MCP / API 调用和验证记录
 
 先输出一句判断：
-- 这是 **Stage 1 Requirement Skill**
-- 这是 **Stage 2 Complete Skill**
+- 这是 **Stage 1 Semi-finished Skill**
+- 这是 **Stage 2 Finished Skill**
 - 这是 **混合包，需要先 split**
 - 这是 **not packageable yet**（目标或输入输出不清）
 
@@ -180,7 +238,7 @@ python /Users/rick/.claude/skills/skill-creator-rick/scripts/audit_skill.py <ski
 - 同步到目标仓库
 - commit / push
 - 返回链接
-- 明确说明发布的是 Stage 1 Requirement Skill 还是 Stage 2 Complete Skill
+- 明确说明发布的是 Stage 1 Semi-finished Skill 还是 Stage 2 Finished Skill
 - Stage 1 发布时必须醒目标注：mock 数据仅用于展示，不可直接用于真实分析或生产
 
 ## Split rule
@@ -191,7 +249,7 @@ python /Users/rick/.claude/skills/skill-creator-rick/scripts/audit_skill.py <ski
 - 输出物完全不同
 - 依赖完全不同的数据源 / MCP / API
 - README 里出现多个互不依赖的核心 promise
-- 一个包同时包含 Stage 1 需求文档和 Stage 2 可运行产品，但两者边界不清
+- 一个包同时包含 Stage 1 半成品文档和 Stage 2 可运行产品，但两者边界不清
 - 用户可以只安装其中一半而不影响另一半
 
 split 输出必须包含：
@@ -216,6 +274,7 @@ split 输出必须包含：
 9. 不能隐瞒接口 / 数据 / MCP 覆盖缺口
 10. 如果 skill 有用户参数，`skill.meta.json > input_schema` 必须存在，且 zh/en key 完全一致
 11. split 不是阶段
+12. 不得删除或省略方法论、流水线编排和阶段门禁；轻量分享包也必须至少保留 `PIPELINE.md` + `STAGE-GATES.md`，完整 creator 包必须保留 `methodology/`、`sop/`、`quality/`
 
 ## input_schema standard
 
@@ -236,7 +295,7 @@ split 输出必须包含：
 ## Required output contract
 
 最终汇报至少包含：
-1. 阶段判断：Stage 1 Requirement / Stage 2 Complete / 需先拆分 / not packageable yet
+1. 阶段判断：Stage 1 Semi-finished / Stage 2 Finished / 需先拆分 / not packageable yet
 2. 完成度判断
 3. 补了哪些文件
 4. 已具备哪些能力

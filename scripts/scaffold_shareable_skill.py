@@ -24,6 +24,8 @@ def render_template(rel_path: str, values: dict[str, str]) -> str:
     content = path.read_text(encoding="utf-8")
     for key, value in values.items():
         content = content.replace("{{" + key + "}}", value)
+        content = content.replace("{{ " + key + " }}", value)
+        content = content.replace("{" + key.lower().replace("_", "-") + "}", value)
     return content
 
 
@@ -40,6 +42,70 @@ def make_skill_meta(skill_name: str, display_name: str, description: str) -> str
         "input_schema": {"zh": {}, "en": {}},
     }
     return json.dumps(obj, ensure_ascii=False, indent=2) + "\n"
+
+
+def make_requirement_canvas(display_name: str, skill_name: str) -> str:
+    return f"""# Requirement Canvas · {display_name}
+
+> Fill every field before entering S1. This scaffold intentionally contains placeholders and must not pass Stage 1 validation until completed.
+
+## Q1 WHO — User
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+
+## Q2 WHAT — Core function / input / output
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+
+## Q3 WHY — Why this skill should exist
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+
+## Q4 WHERE — Data sources
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+
+## Q5 WHEN — Freshness / latency
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+
+## Q6 HOW — Interaction model
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+
+## Q7 PARADIGM — A / B / C
+
+Default: B · specification / semi-finished handoff.
+
+## Boundary confirmation
+
+- [ ] User understands this is a layered semi-finished Antseer skill unless Stage 2 is explicitly validated.
+- [ ] L1-B / L2 gaps will be handed to backend through `data-prd.md`.
+"""
+
+
+def make_layer_readme(layer: str) -> str:
+    titles = {
+        "L1-data": "L1 · 数据接入层",
+        "L2-aggregation": "L2 · MCP 聚合接口层",
+        "L3-compute": "L3 · Skill 脚本计算层",
+        "L4-llm": "L4 · LLM 结构化层",
+        "L5-presentation": "L5 · 前端展示层",
+    }
+    return f"""# {titles.get(layer, layer)}
+
+## 本层职责
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+
+## 责任边界
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+
+## 本 Skill 涉及的 Dxx / 模块
+
+{{{{FILL_BEFORE_VALIDATE}}}}
+"""
 
 
 def make_small_svg(title: str, color: str) -> str:
@@ -64,18 +130,23 @@ def make_card_svg(title: str, color: str) -> str:
 
 def build_values(args: argparse.Namespace, skill_name: str, stage: str) -> dict[str, str]:
     stage_line = (
-        "Stage 1 Requirement Skill：产品方案完整，当前使用 mock 数据展示效果，等待研发接入真实 MCP / API / 数据源。"
+        "Stage 1 Semi-finished Skill：产品方案完整，当前使用 mock 数据展示效果，等待研发接入真实 MCP / API / 数据源。"
         if stage == "requirement"
-        else "Stage 2 Complete Skill：用户主路径不再依赖 mock 数据，真实 MCP / API / 数据源已验证可用。"
+        else "Stage 2 Finished Skill：用户主路径不再依赖 mock 数据，真实 MCP / API / 数据源已验证可用。"
     )
     return {
         "SKILL_NAME": skill_name,
         "DISPLAY_NAME": args.display_name,
+        "SKILL_DISPLAY_NAME": args.display_name,
         "DESCRIPTION": args.description,
         "ONE_LINE_EN": args.one_line_en,
         "ONE_LINE_ZH": args.one_line_zh,
         "BRAND_COLOR": args.brand_color,
         "STAGE_LINE": stage_line,
+        "REMOTE_HEAD_SHA": "{{FILL_BEFORE_VALIDATE}}",
+        "SYNCED_AT": "{{FILL_BEFORE_VALIDATE}}",
+        "TOOL_NAME": "{{FILL_BEFORE_VALIDATE}}",
+        "MODULE_NAME": "{{FILL_BEFORE_VALIDATE}}",
     }
 
 
@@ -112,6 +183,18 @@ def main() -> int:
         write(target / "TODO-TECH.md", render_template("requirement/TODO-TECH.md.tmpl", values))
         write(target / "TECH-INTERFACE-REQUEST.md", render_template("requirement/TECH-INTERFACE-REQUEST.md.tmpl", values))
         write(target / "docs/PRODUCT-SPEC.md", render_template("requirement/PRODUCT-SPEC.md.tmpl", values))
+        write(target / "VERSION", "0.1.0\n")
+        write(target / "requirement-canvas.md", make_requirement_canvas(args.display_name, skill_name))
+        write(target / "demo-v0.html", render_template("s5/skeleton.html", values))
+        write(target / "data-inventory.md", render_template("s5/data-inventory-template.md", values))
+        write(target / "mcp-audit.md", render_template("s5/mcp-audit-template.md", values))
+        write(target / "data-prd.md", render_template("s5/data-prd-template.md", values))
+        write(target / "skill-prd.md", render_template("s5/skill-prd-template.md", values))
+        write(target / "review-report.md", render_template("s5/review-report-template.md", values))
+        write(target / "frontend/index.html", render_template("s5/skeleton.html", values))
+        for layer in ["L1-data", "L2-aggregation", "L3-compute", "L4-llm", "L5-presentation"]:
+            write(target / "layers" / layer / "README.md", make_layer_readme(layer))
+        write(target / "layers/L5-presentation/component-map.md", "# Component Map\n\n{{FILL_BEFORE_VALIDATE}}\n")
     else:
         write(target / "README.md", render_template("complete/README.md.tmpl", values))
         write(target / "README.zh.md", render_template("complete/README.zh.md.tmpl", values))
@@ -120,7 +203,7 @@ def main() -> int:
         write(target / ".env.example", render_template("complete/.env.example.tmpl", values))
         write(target / "MCP-COVERAGE.md", render_template("complete/MCP-COVERAGE.md.tmpl", values))
 
-    print(f"Scaffolded Stage {'1 Requirement' if stage == 'requirement' else '2 Complete'} package at: {target}")
+    print(f"Scaffolded Stage {'1 Semi-finished' if stage == 'requirement' else '2 Finished'} package at: {target}")
     return 0
 
 

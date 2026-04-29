@@ -9,6 +9,10 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+# Keep audit runs from creating __pycache__ in packages that are immediately
+# checked by the hygiene gate.
+sys.dont_write_bytecode = True
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
