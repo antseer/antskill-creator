@@ -15,10 +15,11 @@
 ## 方法论
 
 1. **规范先于创作**。先读 design-system 和 visual-registry,再动手。
-2. **开工前登记**。选主色、字体、Hero 类型,先在 visual-registry 登记本 Skill,再开写。不允许边画边改再登记。
-3. **对齐 PRD**。PRD 每个 L5 组件都必须有实现,缺的标明 v2 延期。
-4. **状态完整**。不只画 happy path,loading / empty / error / hover / click 全要有。
-5. **数据契约优先**。HTML 里每个动态字段对应到某个 Dxx(S1/S2 的 ID),前端不自造数据。
+2. **组件库等同前端权威源**。`antseer-components` 的代码风格、UI 风格、设计样式和组件契约是前端 SoT；Stage 1 尽量符合并披露偏差，Stage 2 必须符合。
+3. **开工前登记**。选主色、字体、Hero 类型,先在 visual-registry 登记本 Skill,再开写。不允许边画边改再登记。
+4. **对齐 PRD**。PRD 每个 L5 组件都必须有实现,缺的标明 v2 延期。
+5. **状态完整**。不只画 happy path,loading / empty / error / hover / click 全要有。
+6. **数据契约优先**。HTML 里每个动态字段对应到某个 Dxx(S1/S2 的 ID),前端不自造数据。
 
 ---
 
@@ -71,6 +72,8 @@ bash /Users/rick/.claude/skills/skill-creator-rick/scripts/sync_antseer_componen
 - 图表用 D3 / Recharts / Plotly 任选
 - **禁止** localStorage / sessionStorage,用内存状态
 - 底部标注 `demo-v1 · Powered by Antseer.ai`
+- 正式交付给官网 / SkillHub 的 HTML 必须包含 `#antseer-data` 和 `#antseer-data-schema`
+- 最外层 root / `.container` / `main` 不设置 `max-width`、`margin: 0 auto` 或外层 padding；这些由 host page 负责
 
 ### 2.2 规范达标
 
@@ -79,6 +82,17 @@ bash /Users/rick/.claude/skills/skill-creator-rick/scripts/sync_antseer_componen
 - 字号/行高/间距:从设计规范的 scale
 - 圆角:从设计规范的 radius scale
 - 阴影:从设计规范的 elevation scale
+- 组件结构、状态、source footer、K 线 / marker / event rail / inspector 的接口优先参考 `antseer-components` 当前缓存
+
+### 2.2A Stage 1 / Stage 2 前端门禁差异
+
+| 项 | Stage 1 | Stage 2 |
+|---|---|---|
+| 组件库合规 | 尽量符合；偏差写进 handoff docs | 必须符合，偏差阻止 Finished |
+| 代码风格 | 原型可内联，但要说明重构点 | adapter / calculator / view model / renderer 分层 |
+| UI 风格 | 使用 Antseer token / palette；临时偏差需披露 | 必须使用 Antseer token / palette，无临时主题色 |
+| 设计样式 | 覆盖关键状态和响应式 | loading / empty / error / degraded / source footer 全覆盖 |
+| 数据 | mock 只能按 PRD schema，并标注 Data Reality | 无 user-path mock / random / fixture，内联也必须是真实验证数据 |
 
 ### 2.3 状态完整
 
@@ -126,7 +140,8 @@ Hero 必须有结论(3 秒内可理解),不允许只放输入表单。
 10. 实现响应式(桌面 + 移动)
 11. 至少实现一个完整交互链路(输入 → 切换 → 重渲染)
 12. 检查 token 引用,全部颜色/字号/间距无硬编码
-13. 执行 G3 门禁
+13. 检查 `antseer-components` SoT：代码风格、UI 风格、设计样式、host 嵌入、source footer、`#antseer-data` / schema
+14. 执行 G3 门禁
 ```
 
 ## §4 产出物

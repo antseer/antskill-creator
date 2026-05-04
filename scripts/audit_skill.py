@@ -24,10 +24,12 @@ from validate_shareable_skill import (  # noqa: E402
     contains_heading,
     detect_stage,
     find_product_plan_artifacts,
+    frontend_files,
     has_junk,
     maybe_warn_missing_input_schema,
     read_text,
     scan_user_path_mocks,
+    validate_frontend_sot,
     validate_complete,
     validate_input_schema,
     validate_package,
@@ -90,7 +92,8 @@ def requirement_dimensions(root: Path) -> list[Dimension]:
     readme = read_text(root / "README.md")
     readme_zh = read_text(root / "README.zh.md")
     tech_request = read_text(root / "TECH-INTERFACE-REQUEST.md")
-    return [
+    frontend_errors, frontend_warnings = validate_frontend_sot(root, "requirement")
+    dims = [
         score_dimension("stage1_required_files", [(rel, exists(root, rel)) for rel in REQUIREMENT_REQUIRED_FILES]),
         score_dimension("data_reality", [
             ("README.md has Data Reality", contains_heading(readme, ["Data Reality"])),
@@ -104,6 +107,11 @@ def requirement_dimensions(root: Path) -> list[Dimension]:
             ("mentions MCP/API/data/schema", any(term in tech_request.lower() for term in ["mcp", "api", "接口", "数据", "schema"])),
         ]),
     ]
+    if frontend_files(root) or exists(root, "frontend"):
+        dims.append(score_dimension("frontend_sot_best_effort", [
+            ("no hard frontend SoT errors", not frontend_errors),
+        ], frontend_warnings))
+    return dims
 
 
 def complete_dimensions(root: Path, run_checks: bool) -> list[Dimension]:
@@ -113,6 +121,7 @@ def complete_dimensions(root: Path, run_checks: bool) -> list[Dimension]:
     validation_blob = readme + "\n" + readme_zh + "\n" + coverage
     run_report = validate_package(root, stage="complete", run_checks=run_checks)
     run_errors = [e for e in run_report.errors if e.startswith("Run check") or "validation.checks.json" in e]
+    frontend_errors, frontend_warnings = validate_frontend_sot(root, "complete")
     dims = [
         score_dimension("stage2_required_files", [(rel, exists(root, rel)) for rel in COMPLETE_REQUIRED_FILES]),
         score_dimension("data_sources", [
@@ -131,6 +140,10 @@ def complete_dimensions(root: Path, run_checks: bool) -> list[Dimension]:
             ("README/MCP-COVERAGE contain no TODO/待补", "TODO" not in validation_blob and "待补" not in validation_blob),
         ]),
     ]
+    if frontend_files(root) or exists(root, "frontend"):
+        dims.append(score_dimension("frontend_sot_hard_gate", [
+            ("frontend passes antseer-components SoT gate", not frontend_errors),
+        ], frontend_warnings))
     if run_checks:
         dims.append(score_dimension("executable_checks", [("validation.checks.json commands pass", not run_errors)]))
     return dims
@@ -159,7 +172,7 @@ def stage2_blockers(root: Path, stage: str, validation_errors: list[str], dimens
         blockers.append("Stage 1 package has not proven real MCP/API/database coverage yet")
         return blockers
     for error in validation_errors:
-        if any(key in error for key in ["Stage 2", "MCP-COVERAGE", "mock", "Data Sources", "Validation Evidence", "Run check"]):
+        if any(key in error for key in ["Stage 2", "MCP-COVERAGE", "mock", "Data Sources", "Validation Evidence", "Run check", "frontend SoT"]):
             blockers.append(error)
     return blockers
 

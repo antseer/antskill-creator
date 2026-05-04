@@ -77,6 +77,8 @@ If any S5-specific artifact exists, the package is judged by the stricter S5 str
 - `TECH-INTERFACE-REQUEST.md` exists
 - Product plan exists: PRD / spec / user flow / prototype / frontend plan / backend plan, at least one concrete artifact
 - Frontend or output experience is specified enough for engineering to build
+- If a frontend exists, `antseer-components` has been synced/checked, cache commit is recorded, and Stage 1 deviations from `references/antseer-components-standard.md` are disclosed as handoff gaps
+- Stage 1 frontend follows Antseer code/UI/design style as much as possible: token palette, component structure, source footer, no vendored component cache, no host-owned root width/padding/centering unless explicitly listed as a Stage 2 blocker
 - Backend capability requirements are specified when backend is needed
 - Every mock / static / proxy / stub data item is listed with future real MCP / API / database replacement path
 - The package does **not** claim direct-use / production / complete readiness
@@ -139,6 +141,13 @@ A package can be called **Stage 2 Finished Skill** only if all critical items pa
 - Test evidence or minimum run evidence exists
 - `validation.checks.json` exists when executable checks are needed
 - If `validation.checks.json` exists, `--run-checks` passes
+- If a frontend exists, it passes the `antseer-components` hard gate:
+  - component cache / repo is not vendored into the skill package
+  - code style follows adapter → domain calculator → view model → renderer; renderer does not fetch raw data, compute business metrics, or fabricate fallback data
+  - UI style uses Antseer tokens / canonical palette and no ad-hoc theme colors
+  - design style covers loading / empty / error / degraded states, responsive behavior, source footer, and visible data-source evidence
+  - official HTML template includes `#antseer-data` and `#antseer-data-schema`
+  - root / `.container` / `main` does not own host width, centering, or outer padding
 
 ### Validation command
 
@@ -164,6 +173,7 @@ Run before GitHub upload, zip handoff, or public/internal sharing.
 | Mock warning | Must be prominent | No user-path mock allowed |
 | Validator | `--stage requirement` passes | `--stage complete --run-checks` passes |
 | Audit | No errors; blockers disclosed | No errors; no Stage 2 blockers |
+| Frontend SoT | `antseer-components` commit recorded; deviations disclosed | `antseer-components` hard gate passes: code/UI/design/data contract compliant |
 | README parity | English and Chinese are structurally aligned | English and Chinese are structurally aligned |
 | Upload note | Must say not for real analysis / production | Must include validation evidence summary |
 

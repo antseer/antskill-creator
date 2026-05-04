@@ -35,12 +35,20 @@ Must state:
 - which MCP / API / database should replace it
 - what blocks Stage 2
 - that mock data is for demonstration only
+- if a frontend exists, which `antseer-components` cache commit was used and which code/UI/design deviations remain
 
 Must not claim:
 - direct-use ready
 - directly usable for real analysis
 - fully integrated with real data
 - share-ready while unresolved placeholders remain (`TODO`, `Replace this`, `{{FILL_BEFORE_VALIDATE}}`, etc.)
+
+Frontend compliance:
+- `antseer-components` is the frontend source of truth.
+- Stage 1 must be best-effort compliant with `references/antseer-components-standard.md`.
+- Code style should already separate data adapter / domain calculator / view model / renderer where practical.
+- UI/design should use Antseer tokens, canonical palette, source footer, state model, and host-embedded layout rules where practical.
+- Any deviation is allowed only as an explicit Stage 2 blocker in handoff docs.
 
 ## Stage 2 — Finished Skill
 
@@ -66,6 +74,14 @@ Must state:
 - last verification date
 - failure / empty-state handling
 - evidence that user-path mock data is gone
+
+Frontend compliance:
+- `antseer-components` hard gate must pass for every user-path frontend.
+- No vendored `antseer-components` checkout / cache / `node_modules`.
+- No user-path mock / fixture / random / synthetic data, including inline `#antseer-data`.
+- `#antseer-data` and `#antseer-data-schema` are required for official HTML templates consumed by SkillHub / website JSON.
+- Root containers must not own host width, centering, or outer padding.
+- Code style, UI style, design style, responsive states, source footer, and data-source evidence must follow `references/antseer-components-standard.md`.
 
 ## Split package
 
@@ -96,5 +112,6 @@ Split plan format:
 - No unresolved placeholders in Stage 2 README or coverage docs
 - No unresolved placeholders in Stage 1 user-facing handoff docs
 - No Stage 2 user-path mock / stub / random data
+- If frontend exists: Stage 1 records `antseer-components` commit and deviations; Stage 2 passes frontend SoT hard gate
 - `--run-checks` passes when executable checks are provided
 - `scripts/audit_skill.py` reports score, missing items, and Stage 2 blockers

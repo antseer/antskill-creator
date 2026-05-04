@@ -13,6 +13,17 @@
 
 凡是生成或重构 Skill 前端，尤其是 K 线、附图、marker、event rail、数据 inspector、source footer 这类通用模块，应优先参考本组件库，而不是从旧 HTML 里复制一次性实现。
 
+### 1.0 权威等级
+
+把 `antseer-components` 当作 **Frontend Source of Truth**：
+
+| 权威源 | 解决的问题 | Stage 1 | Stage 2 |
+|---|---|---|---|
+| MCP capability map | 数据从哪里真实取得 | 缺口可存在，但必须登记 | 必须真实覆盖 |
+| `antseer-components` | 前端应该如何组织、渲染、交互和呈现 | 尽量符合，偏差必须写明 | 必须符合，不符合即门禁失败 |
+
+如果旧页面、临时 demo、个人审美和组件库规范冲突，以组件库规范为准；如果组件库与真实数据合约冲突，先保真实数据，再把组件适配成 view model，不得为适配组件伪造数据。
+
 ## 1.1 发布包边界
 
 组件库 checkout 是运行时参考缓存，不是 `skill-creator-rick` 发布内容：
@@ -50,6 +61,29 @@ bash /Users/rick/.claude/skills/skill-creator-rick/scripts/sync_antseer_componen
 3. **组件输入必须是 view model**：组件不直接读 raw MCP payload，也不在 renderer 中计算业务口径。
 4. **保留 Antseer Design System**：组件样式必须同时符合 `design-system/antseer-design-system.md`。
 5. **沉淀通用接口**：K 线、附图、marker、事件列表、数据来源 footer 应定义清晰输入合约，方便后续 Skill 复用。
+
+## 3.A Stage 1 / Stage 2 合规矩阵
+
+| 维度 | Stage 1 Semi-finished | Stage 2 Finished |
+|---|---|---|
+| 同步证据 | 必须运行或检查缓存，记录 commit；网络不可达时说明缓存版本 | 必须运行或检查缓存，记录 commit；无版本证据不得发布 |
+| 组件 API / 结构 | 尽量贴近组件库结构；无法贴近时写入 `review-report.md` / handoff | 必须遵守组件库输入输出、分层和状态模型 |
+| 代码风格 | 推荐 adapter → calculator → view model → renderer；允许原型内联，但要标注重构点 | 必须 adapter / domain / view model / renderer 分层；renderer 不取数、不算业务口径、不造 fallback |
+| UI 风格 | 必须使用 Antseer token / palette 的主口径；临时偏差需说明 | 必须使用 Antseer token / palette；不得出现临时主题色、无规范 hardcode |
+| 设计样式 | 尽量符合组件库间距、圆角、状态、响应式和 source footer | 必须符合布局、状态、响应式、source footer、host 嵌入规则 |
+| 外层布局 | 不应在 root 限宽 / 居中 / 加外边距；若旧页面暂存，必须列为整改项 | root / `.container` / `main` 不得 `max-width`、`margin: 0 auto` 或承担 host padding |
+| 数据契约 | mock 可以存在，但必须来自 PRD schema，并在 `Data Reality` 标明替换路径 | 用户主路径不得有 mock / fixture / random / synthetic；内联数据也必须来自真实验证产物 |
+| 官网 JSON 模板 | 尽量提供 `#antseer-data` / `#antseer-data-schema` | 必须提供 `#antseer-data` / `#antseer-data-schema`，可被官网 JSON 包装 |
+| 状态 | 至少覆盖主 happy path + loading/empty/error 中的关键状态 | 关键组件必须有 loading / empty / error / degraded 数据源状态 |
+| 发布门禁 | 不符合项可作为 Stage 2 blocker 披露 | 任一 critical 不符合即禁止标记 Stage 2 或发布为 finished |
+
+Stage 1 的“尽量符合”不是可忽略：偏差必须被写进 `review-report.md`、`TODO-TECH.md` 或 `TECH-INTERFACE-REQUEST.md`，否则视为隐瞒缺口。
+
+Stage 2 的“必须符合”包括三类硬门禁：
+
+1. **代码风格硬门禁**：数据适配、业务计算、view model、renderer 分层；无 `Math.random` / fake / demo / fallback 数据进入用户路径。
+2. **UI 风格硬门禁**：使用 Antseer tokens / canonical palette；无临时主题色；无 host-owned root 宽度 / padding / 居中。
+3. **设计样式硬门禁**：组件状态、响应式、source footer、数据来源可见、错误 / 空态 / 降级态齐全。
 
 ## 3.0 官网 JSON 响应交付形态
 

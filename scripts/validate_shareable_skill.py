@@ -93,6 +93,54 @@ USER_PATH_MOCK_PATTERNS = [
 ]
 CODE_EXTENSIONS = {".py", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".cjs", ".sql", ".yaml", ".yml", ".json"}
 IGNORE_MOCK_SCAN_PARTS = {"tests", "test", "fixtures", "fixture", "evals", "examples", "example", "docs", "references", "assets", "templates"}
+FRONTEND_EXTENSIONS = {".html", ".css", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".cjs"}
+FRONTEND_SCAN_DIRS = {"frontend", "public", "src"}
+FRONTEND_IGNORE_PARTS = {"tests", "test", "fixtures", "fixture", "evals", "examples", "example", "docs", "references", "assets", "templates", "node_modules", ".git"}
+BANNED_FRONTEND_VENDOR_DIRS = {"antseer-components", "frontend-components", "node_modules"}
+ANTSEER_CANONICAL_COLORS = {
+    "#36dd0c",
+    "#ffb000",
+    "#1196dd",
+    "#05df72",
+    "#ff4444",
+    "#080807",
+    "#1d1d1a",
+    "#121210",
+    "#2a2926",
+}
+ROOT_LAYOUT_SELECTORS = [
+    ".container",
+    ".app",
+    ".skill-root",
+    ".antseer-root",
+    ".page",
+    "#app",
+    "#root",
+    "main",
+    "body",
+]
+FRONTEND_SOT_EVIDENCE_FILES = [
+    "README.md",
+    "README.zh.md",
+    "review-report.md",
+    "TODO-TECH.md",
+    "TECH-INTERFACE-REQUEST.md",
+    "MCP-COVERAGE.md",
+    "data-prd.md",
+    "skill-prd.md",
+]
+FRONTEND_CODE_LAYER_PATTERNS = {
+    "data adapter": r"\b(adapter|adapt[A-Z_]|adapt_|toViewModel|fromPayload|normalize[A-Z_]|normalize_)",
+    "domain calculator": r"\b(calculator|calculate[A-Z_]|calculate_|compute[A-Z_]|compute_|derive[A-Z_]|derive_)",
+    "view model": r"\b(viewModel|view_model|view-model|ViewModel|VIEW_MODEL)",
+    "renderer": r"\b(render|renderer|Renderer|mount[A-Z_]|mount_)",
+}
+FRONTEND_STATE_PATTERNS = {
+    "loading": r"\b(loading|isLoading|skeleton|加载)",
+    "empty": r"\b(empty|isEmpty|noData|空态|无数据)",
+    "error": r"\b(error|hasError|catch\s*\(|错误|失败)",
+    "degraded": r"\b(degraded|stale|unavailable|fallbackState|降级|不可用)",
+}
 PARAM_HINT_PATTERNS = [
     r"\bparameters?\b",
     r"参数",
@@ -246,6 +294,245 @@ def scan_user_path_mocks(root: Path) -> list[str]:
                 hits.append(str(rel))
                 break
     return sorted(set(hits))
+
+
+def frontend_files(root: Path) -> list[Path]:
+    """Return user-path frontend files, excluding examples/templates/reference docs."""
+    found: list[Path] = []
+    for p in root.rglob("*"):
+        if not p.is_file() or p.suffix.lower() not in FRONTEND_EXTENSIONS:
+            continue
+        rel = p.relative_to(root)
+        if any(part in FRONTEND_IGNORE_PARTS for part in rel.parts):
+            continue
+        if "frontend" in rel.parts or rel.parts[0] in FRONTEND_SCAN_DIRS or p.name in {"index.html", "demo-v1.html"}:
+            found.append(p)
+            continue
+
+        # If a root-level official template exists, same-directory JS/CSS files
+        # are part of the user path and must not bypass the frontend gate.
+        if len(rel.parts) == 1 and (root / "index.html").exists() and p.suffix.lower() in {".css", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".cjs"}:
+            found.append(p)
+    return sorted(set(found))
+
+
+def find_vendored_frontend_authority(root: Path) -> list[str]:
+    found: list[str] = []
+    for p in root.rglob("*"):
+        if not p.is_dir():
+            continue
+        rel = p.relative_to(root)
+        if any(part in {".git"} for part in rel.parts):
+            continue
+        if p.name in BANNED_FRONTEND_VENDOR_DIRS:
+            found.append(str(rel))
+    return sorted(set(found))
+
+
+def selector_has_outer_layout_constraint(css_or_html: str) -> list[str]:
+    """Detect common host-owned outer layout constraints on root wrappers.
+
+    This is intentionally conservative: it only flags explicit selector blocks
+    for known outer wrappers, not internal cards/grids.
+    """
+    hits: list[str] = []
+    def is_root_selector(selector: str) -> bool:
+        selector = selector.strip()
+        if not selector:
+            return False
+        root_patterns = [
+            r"(^|[\s>+~])body($|[\s>+~.#:\[])",
+            r"(^|[\s>+~])main($|[\s>+~.#:\[])",
+            r"(^|[\s>+~])#(?:app|root)($|[\s>+~.#:\[])",
+            r"(^|[\s>+~])\.(?:container|app|skill-root|antseer-root|page)($|[\s>+~.#:\[])",
+        ]
+        return any(re.search(pattern, selector, flags=re.IGNORECASE) for pattern in root_patterns)
+
+    block_re = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]+)\}", re.IGNORECASE | re.MULTILINE)
+    for m in block_re.finditer(css_or_html):
+        body = m.group("body")
+        selectors = [s.strip() for s in m.group("selector").split(",")]
+        root_selectors = [s for s in selectors if is_root_selector(s)]
+        if not root_selectors:
+            continue
+        selector = ", ".join(root_selectors)
+        bad_props = []
+        if re.search(r"\bmax-width\s*:", body, flags=re.IGNORECASE):
+            bad_props.append("max-width")
+        if re.search(r"\bmargin\s*:\s*0\s+auto\b", body, flags=re.IGNORECASE):
+            bad_props.append("margin: 0 auto")
+        if re.search(r"\bpadding(?:-\w+)?\s*:", body, flags=re.IGNORECASE):
+            bad_props.append("root padding")
+        if bad_props:
+            hits.append(f"{selector}: {', '.join(sorted(set(bad_props)))}")
+    return hits
+
+
+def antseer_components_cache_commit() -> str | None:
+    cache_home = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+    cache = cache_home / "skill-creator-rick" / "antseer-components"
+    if not (cache / ".git").exists():
+        return None
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(cache), "rev-parse", "--short=12", "HEAD"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=False,
+        )
+    except Exception:
+        return None
+    commit = result.stdout.strip()
+    return commit if result.returncode == 0 and re.fullmatch(r"[0-9a-f]{7,40}", commit) else None
+
+
+def frontend_sot_evidence_text(root: Path) -> str:
+    chunks: list[str] = []
+    for rel in FRONTEND_SOT_EVIDENCE_FILES:
+        p = root / rel
+        if p.exists() and p.is_file():
+            chunks.append(read_text(p))
+    return "\n".join(chunks)
+
+
+def has_component_commit_evidence(root: Path, current_commit: str | None = None) -> bool:
+    evidence = frontend_sot_evidence_text(root)
+    if "antseer-components" not in evidence and "Frontend SoT" not in evidence and "组件库" not in evidence:
+        return False
+    if not current_commit:
+        return False
+    return current_commit in evidence
+
+
+def frontend_stage1_deviation_documented(root: Path) -> bool:
+    evidence = frontend_sot_evidence_text(root)
+    if not evidence.strip():
+        return False
+    return bool(re.search(
+        r"(antseer-components|Frontend SoT|前端).{0,160}(deviation|gap|blocker|偏差|缺口|整改|Stage 2|阶段 2)",
+        evidence,
+        flags=re.IGNORECASE | re.DOTALL,
+    ))
+
+
+def frontend_code_style_misses(aggregate: str) -> list[str]:
+    misses: list[str] = []
+    for label, pattern in FRONTEND_CODE_LAYER_PATTERNS.items():
+        if not re.search(pattern, aggregate, flags=re.IGNORECASE):
+            misses.append(f"frontend code style missing {label} layer evidence")
+
+    state_hits = [
+        label
+        for label, pattern in FRONTEND_STATE_PATTERNS.items()
+        if re.search(pattern, aggregate, flags=re.IGNORECASE)
+    ]
+    if len(state_hits) < 3:
+        misses.append("frontend design state model must show at least 3 of loading/empty/error/degraded")
+
+    renderer_fetch_patterns = [
+        r"\b(render|renderer|mount)\w*\s*(?:=|:)?\s*(?:function)?[^{=]*\{[^}]{0,1200}\bfetch\s*\(",
+        r"\b(render|renderer|mount)\w*\s*=>\s*\{[^}]{0,1200}\bfetch\s*\(",
+    ]
+    if any(re.search(pattern, aggregate, flags=re.IGNORECASE | re.DOTALL) for pattern in renderer_fetch_patterns):
+        misses.append("renderer appears to fetch raw data; move data access into adapter")
+
+    renderer_calc_patterns = [
+        r"\b(render|renderer|mount)\w*\s*(?:=|:)?\s*(?:function)?[^{=]*\{[^}]{0,1200}\b(reduce|map|filter|sort)\s*\(",
+    ]
+    if any(re.search(pattern, aggregate, flags=re.IGNORECASE | re.DOTALL) for pattern in renderer_calc_patterns):
+        misses.append("renderer appears to compute business/domain transformations; move logic into calculator/view model")
+
+    fallback_patterns = [
+        r"\b(fallback|default)(Data|Rows|Items|Payload|Source)\s*=",
+        r"\|\|\s*(\[\]|\{\})\s*;?\s*(//.*)?$",
+    ]
+    if any(re.search(pattern, aggregate, flags=re.IGNORECASE | re.MULTILINE) for pattern in fallback_patterns):
+        misses.append("frontend appears to fabricate fallback/default data")
+
+    return misses
+
+
+def frontend_ui_style_misses(aggregate: str) -> list[str]:
+    misses: list[str] = []
+    hexes = set(re.findall(r"#[0-9a-fA-F]{6}\b", aggregate))
+    noncanonical = sorted(h for h in hexes if h.lower() not in ANTSEER_CANONICAL_COLORS)
+    if noncanonical:
+        misses.append("frontend contains non-canonical hardcoded colors: " + ", ".join(noncanonical[:10]))
+    return misses
+
+
+def validate_frontend_sot(root: Path, stage: str) -> tuple[list[str], list[str]]:
+    """Apply antseer-components as frontend SoT.
+
+    Stage 1 treats most compliance misses as warnings because the package may
+    be a handoff prototype. Stage 2 turns the same misses into hard errors.
+    Vendoring the authority repo/cache is always an error.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    files = frontend_files(root)
+    has_frontend = bool(files) or (root / "frontend").exists()
+    if not has_frontend:
+        return errors, warnings
+
+    vendored = find_vendored_frontend_authority(root)
+    if vendored:
+        errors.append("Do not vendor frontend authority/cache into the skill package: " + ", ".join(vendored))
+
+    html_files = [p for p in files if p.suffix.lower() == ".html"]
+    aggregate = "\n".join(read_text(p) for p in files)
+    soft_misses: list[str] = []
+    current_commit = antseer_components_cache_commit()
+    has_commit_evidence = has_component_commit_evidence(root, current_commit)
+
+    if not current_commit:
+        soft_misses.append("antseer-components local cache is missing or not a readable git checkout")
+    if not has_commit_evidence:
+        soft_misses.append("package docs must record antseer-components cache commit/evidence")
+
+    if "localStorage" in aggregate or "sessionStorage" in aggregate:
+        soft_misses.append("frontend must not use localStorage/sessionStorage")
+
+    if any(re.search(pattern, aggregate, flags=re.IGNORECASE) for pattern in USER_PATH_MOCK_PATTERNS):
+        soft_misses.append("frontend user path contains mock/stub/random/demo data patterns")
+
+    if not re.search(r"--antseer-|var\(--antseer-|#(?:36dd0c|ffb000|1196dd|05df72|ff4444|080807|1d1d1a|121210|2a2926)\b", aggregate, flags=re.IGNORECASE):
+        soft_misses.append("frontend does not visibly use Antseer design tokens/canonical palette")
+
+    if not re.search(r"Powered by Antseer|Antseer\.ai|数据来源|Data Source|source footer", aggregate, flags=re.IGNORECASE):
+        soft_misses.append("frontend must expose Antseer/source footer")
+
+    layout_hits: list[str] = []
+    for p in files:
+        text = read_text(p)
+        for hit in selector_has_outer_layout_constraint(text):
+            layout_hits.append(f"{p.relative_to(root)} {hit}")
+    if layout_hits:
+        soft_misses.append("host-owned outer layout constraint detected: " + "; ".join(layout_hits[:5]))
+
+    if stage == "complete":
+        soft_misses.extend(frontend_code_style_misses(aggregate))
+        soft_misses.extend(frontend_ui_style_misses(aggregate))
+
+    for html in html_files:
+        text = read_text(html)
+        rel = html.relative_to(root)
+        if html.name == "index.html" or "frontend" in rel.parts:
+            if not re.search(r'id=["\']antseer-data["\']', text):
+                soft_misses.append(f"{rel} missing inline #antseer-data payload for official JSON-template delivery")
+            if not re.search(r'id=["\']antseer-data-schema["\']', text):
+                soft_misses.append(f"{rel} missing #antseer-data-schema contract")
+
+    if stage == "complete":
+        errors.extend(f"Stage 2 frontend SoT gate: {miss}" for miss in sorted(set(soft_misses)))
+    else:
+        warnings.extend(f"Stage 1 frontend SoT best-effort: {miss}" for miss in sorted(set(soft_misses)))
+        if soft_misses and not frontend_stage1_deviation_documented(root):
+            warnings.append("Stage 1 frontend SoT best-effort: deviations should be recorded in review-report/TODO-TECH/TECH-INTERFACE-REQUEST")
+
+    return errors, warnings
 
 
 def option_values(options: object) -> list[object]:
@@ -570,6 +857,10 @@ def validate_package(root: Path, stage: str = "auto", run_checks: bool = False) 
         report.errors.extend(validate_requirement(root))
     elif actual_stage == "complete":
         report.errors.extend(validate_complete(root, run_checks=run_checks))
+
+    frontend_errors, frontend_warnings = validate_frontend_sot(root, actual_stage)
+    report.errors.extend(frontend_errors)
+    report.warnings.extend(frontend_warnings)
 
     return report
 

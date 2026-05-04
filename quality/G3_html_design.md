@@ -23,6 +23,16 @@
 - [ ] 所有间距引用 spacing scale,无魔法数字
 - [ ] 所有圆角引用 radius scale
 - [ ] 符合 `design-system/antseer-design-system.md` 的硬约束(深色底、特定对比度等)
+- [ ] 符合 `references/antseer-components-standard.md` 的 Antseer canonical palette / source footer / host 嵌入规则
+
+## G3.2A · Frontend SoT 合规(🔴 Critical)
+
+- [ ] Stage 1：已尽量遵守 `antseer-components` 的组件结构、代码分层、UI token、状态和响应式规范；无法遵守项已记录为 Stage 2 blocker
+- [ ] Stage 2：代码风格硬达标：adapter → domain calculator → view model → renderer 分层；renderer 不取数、不算业务口径、不造 fallback 数据
+- [ ] Stage 2：UI 风格硬达标：使用 Antseer tokens / canonical palette；无临时主题色；无业务样式散落 hardcode
+- [ ] Stage 2：设计样式硬达标：loading / empty / error / degraded 状态、source footer、响应式和数据来源证据齐全
+- [ ] Stage 2：正式 HTML 模板包含 `#antseer-data` 与 `#antseer-data-schema`
+- [ ] Stage 2：root / `.container` / `main` 不设置 `max-width`、`margin: 0 auto` 或外层 padding
 
 ## G3.3 · 高保真要求(🔴 Critical)
 
@@ -70,6 +80,9 @@
 |---|---|
 | 未同步 antseer-components | 先执行 `scripts/sync_antseer_components.sh`，记录外部缓存 commit，再重跑 G3 |
 | 把组件库 node_modules / demo 数据复制进 Skill | 删除 vendored 缓存，只保留真实 Skill 源码和必要规范引用 |
+| Stage 2 前端缺 `#antseer-data` / schema / source footer | 补官网 JSON 模板契约和来源 footer，再重跑门禁 |
+| root 容器承担页面宽度 / 居中 / padding | 删除 root 约束，交给 host page；只保留内部 section/card spacing |
+| renderer 直接读 MCP payload 或生成 fallback | 增加 adapter / view model 层，renderer 只消费 view model |
 | 画完才登记 visual-registry | 回 S3 重新确认主色/字体/Hero,修改若撞脸的地方,重跑门禁 |
 | 硬编码颜色 | 全部改 CSS 变量,引 tokens |
 | 只画 happy path | 每个主组件补 loading / empty,Hero + 主图表补 error |

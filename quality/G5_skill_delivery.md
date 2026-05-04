@@ -23,3 +23,15 @@
 
 - [ ] 从 L5 组件能追到上游数据点
 - [ ] 唯一允许的断点是 `data-prd.md` 中已登记缺口
+
+## G5.5 Frontend Source of Truth（🔴）
+
+- [ ] 已执行或检查 `scripts/sync_antseer_components.sh`，记录外部缓存 commit
+- [ ] 发布包未包含 `antseer-components` checkout / `.git` / `node_modules` / demo 数据
+- [ ] Stage 1：`frontend/index.html` 尽量符合 `references/antseer-components-standard.md`；偏差已进入 `review-report.md` / `TODO-TECH.md` / `TECH-INTERFACE-REQUEST.md`
+- [ ] Stage 2：代码风格、UI 风格、设计样式、host 嵌入、source footer、`#antseer-data` / `#antseer-data-schema` 全部符合前端 SoT
+- [ ] Stage 2：用户主路径无 mock / fixture / random / synthetic 数据；内联数据也有真实来源和验证证据
+
+## 通过条件
+
+所有 🔴 项通过；若目标是 Stage 2 Finished Skill，Frontend SoT 任一失败都必须降级为 Stage 1 blocker，不能发布为 finished。

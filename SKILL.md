@@ -62,6 +62,20 @@ compatibility: filesystem, python3, git
 
 Stage 1 可以包含 L1-B / L2 缺口，但必须在 `TECH-INTERFACE-REQUEST.md` / `data-prd.md` 中写清接口契约；Stage 2 必须验证这些缺口已经被真实来源覆盖。
 
+### Frontend Source of Truth model
+
+`antseer-components` 对前端的权威等级，等同于 MCP capability map 对数据源的权威等级：
+
+| Authority | Governs | Stage 1 | Stage 2 |
+|---|---|---|---|
+| MCP capability map | real data source / routing / ownership | gaps allowed if explicit | full real coverage required |
+| `antseer-components` | code style / UI style / design style / component contracts | best-effort compliance + disclosed deviations | hard compliance required |
+
+因此：
+- 做 S3 HTML、V2-style 改造、Stage 2 真实数据 UI、K 线 / 指标附图 / event marker / source footer 时，必须先同步或检查 `antseer-components` 外部缓存并记录 commit。
+- Stage 1 前端要尽量符合组件库规范；不符合项必须写入 `review-report.md`、`TODO-TECH.md` 或 `TECH-INTERFACE-REQUEST.md`，作为 Stage 2 blocker。
+- Stage 2 前端必须符合 `references/antseer-components-standard.md` 的代码风格、UI 风格、设计样式、数据契约、官网 JSON 模板和 host 嵌入规则；任一 critical 不符合，不得称为 Finished Skill。
+
 ### Stage 1 shapes
 
 Stage 1 有两个合法形态，不能混淆：
@@ -166,6 +180,10 @@ bash /Users/rick/.claude/skills/skill-creator-rick/scripts/sync_antseer_componen
 ```
 
 Use `references/antseer-components-standard.md` as the rule. Treat `https://github.com/antseer/antseer-components` as the frontend component source of truth, similar to the MCP capability map for data. Reference its modular structure and component contracts, but never inherit demo/fixture/synthetic data into Stage 2 user paths.
+
+Stage rule:
+- **Stage 1**: best-effort compliance; disclose every code/UI/design deviation as an implementation gap.
+- **Stage 2**: hard compliance; code style, UI style, design style, data contract, source footer, no-demo-data, and host embedding constraints are release blockers.
 
 ## V2-style productization writing
 
@@ -310,6 +328,7 @@ split 输出必须包含：
 11. split 不是阶段
 12. 不得删除或省略方法论、流水线编排和阶段门禁；轻量分享包也必须至少保留 `PIPELINE.md` + `STAGE-GATES.md`，完整 creator 包必须保留 `methodology/`、`sop/`、`quality/`
 13. Antseer frontend / Stage 2 / 发布前验收必须通过子 agent 独立规范复核；无 P0/P1 后才允许声明完成或 push
+14. `antseer-components` 是前端权威参考和硬门禁：Stage 1 尽量符合并披露偏差；Stage 2 必须符合代码风格、UI 风格、设计样式和数据契约
 
 ## input_schema standard
 

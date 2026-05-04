@@ -13,6 +13,13 @@ For the full pass / stop / split / publish decision table, see `STAGE-GATES.md`.
 
 The S0-S5 pipeline usually produces a **Stage 1 Semi-finished Skill** first. It becomes **Stage 2 Finished** only after mock / missing L1-B / L2 dependencies are replaced by verified real MCP / API / database sources.
 
+Two source-of-truth systems run in parallel:
+
+- **MCP capability map** is the hard authority for data truth.
+- **`antseer-components`** is the hard authority for frontend truth: code style, UI style, design style, component contracts, source footer, and host embedding.
+
+Stage 1 should conform to both as much as possible and disclose gaps. Stage 2 must conform to both; any unresolved frontend SoT gap blocks Finished status the same way an unresolved MCP gap blocks real-data status.
+
 ## S0-S5 build pipeline
 
 | Step | Goal | SOP | Gate | Main outputs |
@@ -20,7 +27,7 @@ The S0-S5 pipeline usually produces a **Stage 1 Semi-finished Skill** first. It 
 | S0 | Intent anchoring + requirement crystallization + rough demo | `sop/s0_requirement.md` | `quality/G0_requirement.md` | intent-card.md, requirement canvas, demo-v0 |
 | S1 | Data inventory, list first and do not judge | `sop/s1_data_inventory.md` | `quality/G1_data_inventory.md` | data-inventory.md |
 | S2 | MCP truth sync, routing audit, dual PRD | `sop/s2_routing_and_prd.md` | `quality/G2_routing_and_prd.md` | mcp-audit.md, data-prd.md, skill-prd.md |
-| S3 | Hi-fi HTML using Antseer design rules | `sop/s3_html_design.md` | `quality/G3_html_design.md` | demo-v1.html, visual registry update |
+| S3 | Hi-fi HTML using Antseer design rules and `antseer-components` frontend SoT | `sop/s3_html_design.md` | `quality/G3_html_design.md` | demo-v1.html, visual registry update, component cache commit |
 | S4 | HTML ↔ PRD alignment review | `sop/s4_review.md` | `quality/G4_review.md` | review-report.md |
 | S5 | Skill package delivery | `sop/s5_skill_delivery.md` | `quality/G5_skill_delivery.md` | SKILL.md, README, skill.meta.json, PRDs, handoff docs |
 
