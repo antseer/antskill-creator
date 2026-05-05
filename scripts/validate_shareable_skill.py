@@ -47,6 +47,7 @@ S5_REQUIRED_DIRS = [
     "layers/L4-llm",
     "layers/L5-presentation",
 ]
+S5_MARKERS = ["data-prd.md", "skill-prd.md", "frontend", "layers", "mcp-audit.md", "data-inventory.md"]
 COMPLETE_REQUIRED_FILES = [
     "VERSION",
     "agents/openai.yaml",
@@ -200,6 +201,34 @@ UNRESOLVED_PLACEHOLDER_PATTERNS = [
     r"\{module-name\}",
     r"\{one-line English value proposition\}",
     r"\{一句话中文核心价值\}",
+]
+DATA_MCP_FRONTEND_PATTERNS = [
+    r"\bMCP\b",
+    r"\bAPI\b",
+    r"\bschema\b",
+    r"\bdatabase\b",
+    r"\bdata\s+(?:source|reality|contract|dependency|inventory|provenance)\b",
+    r"\breal\s+data\b",
+    r"\bmock\b",
+    r"\bfixture\b",
+    r"\bstub\b",
+    r"\bOHLC\b",
+    r"\bcandle(?:s)?\b",
+    r"\bprice\b",
+    r"\bvolume\b",
+    r"\bvolatility\b",
+    r"\breturn(?:s)?\b",
+    r"数据源",
+    r"数据真实性",
+    r"真实数据",
+    r"模拟数据",
+    r"接口",
+    r"后端",
+    r"行情",
+    r"K\s*线",
+    r"成交量",
+    r"收益",
+    r"波动",
 ]
 
 
@@ -432,6 +461,60 @@ def frontend_files(root: Path) -> list[Path]:
     for html_file in [p for p in sorted(set(found)) if p.suffix.lower() == ".html"]:
         found.extend(linked_frontend_assets(root, html_file))
     return sorted(set(found))
+
+
+def root_or_user_frontend_exists(root: Path) -> bool:
+    """True when the package has a user-path frontend/prototype entrypoint."""
+    if frontend_files(root):
+        return True
+    return any(
+        p.is_file()
+        and p.suffix.lower() == ".html"
+        and not frontend_rel_ignored(p.relative_to(root))
+        for p in root.rglob("*")
+    )
+
+
+def stage1_requirement_text(root: Path) -> str:
+    rels = [
+        "README.md",
+        "README.zh.md",
+        "SKILL.md",
+        "REQUIREMENT-REVIEW.md",
+        "TODO-TECH.md",
+        "TECH-INTERFACE-REQUEST.md",
+    ]
+    chunks = [read_text(root / rel) for rel in rels]
+    chunks.extend(read_text(p) for p in product_plan_files(root))
+    return "\n".join(chunks)
+
+
+def requires_s5_semifinished(root: Path) -> tuple[bool, str]:
+    """Decide whether Stage 1 Lite is illegal for this package.
+
+    S5 is mandatory when the package is a data/MCP/API-driven frontend skill.
+    The previous gate only looked for already-created S5 artifacts, which let
+    incomplete high-fidelity frontend packages pass as Lite.
+    """
+    if any((root / marker).exists() for marker in S5_MARKERS):
+        return True, "S5 artifact is present, so the package must satisfy the full S5 handoff structure"
+
+    if not root_or_user_frontend_exists(root):
+        return False, ""
+
+    text = stage1_requirement_text(root)
+    hits = [
+        pattern
+        for pattern in DATA_MCP_FRONTEND_PATTERNS
+        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE)
+    ]
+    if hits:
+        return True, (
+            "frontend/prototype package declares data, mock, MCP/API, backend, or market-stat dependencies; "
+            "Stage 1 Lite is not allowed for data-driven frontend skills"
+        )
+
+    return False, ""
 
 
 def find_vendored_frontend_authority(root: Path) -> list[str]:
@@ -1171,14 +1254,28 @@ def validate_requirement(root: Path) -> list[str]:
 def validate_s5_semifinished(root: Path) -> list[str]:
     """Validate the stricter Antseer S5 semi-finished structure when present.
 
-    Stage 1 Lite packages do not need this. If any S5-specific artifact exists,
-    the whole S5 handoff skeleton must be coherent.
+    Stage 1 Lite packages do not need this only when they are genuinely light.
+    Any data/MCP/API-driven frontend skill must use the full S5 handoff even if
+    the author forgot to create S5 artifacts.
     """
-    markers = ["data-prd.md", "skill-prd.md", "frontend", "layers", "mcp-audit.md"]
-    if not any((root / m).exists() for m in markers):
+    required, reason = requires_s5_semifinished(root)
+    if not required:
         return []
 
     errors: list[str] = []
+    if reason:
+        missing_core = [
+            rel
+            for rel in S5_REQUIRED_FILES
+            if not (root / rel).exists()
+        ] + [
+            rel
+            for rel in S5_REQUIRED_DIRS
+            if not (root / rel).is_dir()
+        ]
+        if missing_core:
+            errors.append(f"S5 semi-finished structure is mandatory: {reason}")
+
     for rel in S5_REQUIRED_FILES:
         if not (root / rel).exists():
             errors.append(f"S5 semi-finished package missing: {rel}")

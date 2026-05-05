@@ -96,7 +96,17 @@ Stage 1 有两个合法形态，不能混淆：
 | Lite Semi-finished Package | 轻量产品/工程提需包 | `REQUIREMENT-REVIEW.md`、`TODO-TECH.md`、`TECH-INTERFACE-REQUEST.md`、产品 spec/prototype |
 | Antseer S5 Semi-finished Package | 完整 Antseer 可视化 skill 半成品 | Lite 全部要求 + `data-inventory.md`、`mcp-audit.md`、`data-prd.md`、`skill-prd.md`、`review-report.md`、`frontend/index.html`、`layers/L1-L5` |
 
-如果包里出现任一 S5 产物，就按 S5 严格结构校验。脚手架刚生成时允许带 `{{FILL_BEFORE_VALIDATE}}` 占位，但占位未填完不得通过 Stage 1 validation，也不得上传为 share-ready。
+Lite 只能用于不含高保真前端主路径、且不依赖真实 MCP / API / database / market data / 统计计算的数据轻量提需包。
+
+只要 Stage 1 包满足任一条件，就必须走 Antseer S5，不能降级为 Lite：
+
+- 有用户可见 HTML / frontend / prototype，并且 PRD、README、接口文档或代码中出现 MCP / API / schema / database / 真实数据 / mock / 行情 / K 线 / 成交量 / 收益 / 波动 / 统计口径等依赖。
+- 有可见前端指标需要后端拉取、聚合或计算。
+- 有 mock / fixture / stub 数据用于展示最终用户路径。
+- 用户明确要求按 S0-S5、MCP 能力比照、MCP PRD、数据 PRD、skill PRD 或 Stage 1 可交接格式输出。
+- 包里出现任一 S5 产物。
+
+如果包里出现任一 S5 产物，或被判定为“数据/MCP 驱动的前端 Stage 1”，就按 S5 严格结构校验。脚手架刚生成时允许带 `{{FILL_BEFORE_VALIDATE}}` 占位，但占位未填完不得通过 Stage 1 validation，也不得上传为 share-ready。
 
 ## Stage model
 

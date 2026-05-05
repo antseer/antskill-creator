@@ -89,7 +89,17 @@ There are two accepted Stage 1 shapes:
 | Stage 1 Lite Semi-finished Package | Product plan + prototype/data reality handoff | `README`, `REQUIREMENT-REVIEW`, `TODO-TECH`, `TECH-INTERFACE-REQUEST`, product spec/prototype |
 | Stage 1 Antseer S5 Semi-finished Package | Full Antseer visualization skill handoff | Everything in Lite plus `data-inventory.md`, `mcp-audit.md`, `data-prd.md`, `skill-prd.md`, `review-report.md`, `frontend/index.html`, `layers/L1-L5` |
 
-If any S5-specific artifact exists, the package is judged by the stricter S5 structure.
+Lite is only valid for genuinely lightweight product/engineering requests. It is not valid for a data-driven frontend skill.
+
+A Stage 1 package must be judged as Antseer S5, even if S5 files have not been created yet, when any of these are true:
+
+- It has a user-visible HTML/frontend/prototype and mentions MCP, API, schema, database, real data, mock, market data, K-line/candles, volume, returns, volatility, statistics, or backend data dependencies.
+- A visible metric/card/chart/table requires backend fetching, aggregation, or deterministic computation.
+- Mock/fixture/stub data is used on the final user path.
+- The user asked for S0-S5, MCP capability comparison, MCP PRD, data PRD, skill PRD, or a Stage 1 handoff format.
+- Any S5-specific artifact exists.
+
+If any S5-specific artifact exists, or the package is detected as a data/MCP-driven frontend Stage 1, the package is judged by the stricter S5 structure. Failing to create S5 files is a blocker, not permission to call it Lite.
 
 ### Critical pass conditions
 
@@ -105,6 +115,7 @@ If any S5-specific artifact exists, the package is judged by the stricter S5 str
 - Stage 1 frontend follows Antseer code/UI/design style as much as possible: token palette, component structure, source footer, no vendored component cache, no host-owned root width/padding/centering unless explicitly listed as a Stage 2 blocker
 - All deliverable HTML uses Chinese visible UI copy and declares `<html lang="zh-CN">`; English is allowed only for brand names, tickers, protocol/technical abbreviations, URLs, and version identifiers
 - `STAGE-GATE-SIGNATURE.json` exists, is fresh, and verifies data PRD / skill PRD / frontend / Skill / handoff docs are logically unified
+- Data/MCP-driven frontend packages include full S2/S5 artifacts: `data-inventory.md`, `mcp-audit.md`, `data-prd.md`, `skill-prd.md`, `review-report.md`, `frontend/index.html`, and `layers/L1-L5`
 - Backend capability requirements are specified when backend is needed
 - Every mock / static / proxy / stub data item is listed with future real MCP / API / database replacement path
 - The package does **not** claim direct-use / production / complete readiness

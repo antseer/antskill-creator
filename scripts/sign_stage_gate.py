@@ -51,6 +51,37 @@ IGNORE_NAMES = {SIGNATURE_FILE, ".DS_Store"}
 IGNORE_PARTS = {".git", "__pycache__", "node_modules"}
 TEXT_EXTS = {".md", ".html", ".json", ".py", ".js", ".ts", ".tsx", ".yaml", ".yml", ".css"}
 CODE_TEXT_EXTS = {".py", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".cjs"}
+S5_MARKERS = ["data-prd.md", "skill-prd.md", "mcp-audit.md", "data-inventory.md", "frontend", "layers"]
+S5_REQUIRED_FILES = ["VERSION", "data-prd.md", "skill-prd.md", "review-report.md", "frontend/index.html"]
+S5_REQUIRED_LAYER_DIRS = ["layers/L1-data", "layers/L2-aggregation", "layers/L3-compute", "layers/L4-llm", "layers/L5-presentation"]
+DATA_MCP_FRONTEND_PATTERNS = [
+    r"\bMCP\b",
+    r"\bAPI\b",
+    r"\bschema\b",
+    r"\bdatabase\b",
+    r"\bdata\s+(?:source|reality|contract|dependency|inventory|provenance)\b",
+    r"\breal\s+data\b",
+    r"\bmock\b",
+    r"\bfixture\b",
+    r"\bstub\b",
+    r"\bOHLC\b",
+    r"\bcandle(?:s)?\b",
+    r"\bprice\b",
+    r"\bvolume\b",
+    r"\bvolatility\b",
+    r"\breturn(?:s)?\b",
+    r"数据源",
+    r"数据真实性",
+    r"真实数据",
+    r"模拟数据",
+    r"接口",
+    r"后端",
+    r"行情",
+    r"K\s*线",
+    r"成交量",
+    r"收益",
+    r"波动",
+]
 
 
 def read_text(path: Path) -> str:
@@ -112,6 +143,49 @@ def load_json(path: Path) -> Any | None:
         return json.loads(read_text(path))
     except Exception:
         return None
+
+
+def ignored_frontend_rel(rel: Path) -> bool:
+    return any(part in {"tests", "test", "fixtures", "fixture", "evals", "examples", "example", "docs", "references", "assets", "templates", "node_modules", ".git"} for part in rel.parts)
+
+
+def frontend_artifact_exists(root: Path) -> bool:
+    for p in root.rglob("*"):
+        if not p.is_file() or p.suffix.lower() not in {".html", ".css", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".cjs"}:
+            continue
+        rel = p.relative_to(root)
+        if ignored_frontend_rel(rel):
+            continue
+        if p.suffix.lower() == ".html" or "frontend" in rel.parts or rel.parts[0] in {"frontend", "public", "src"}:
+            return True
+    return False
+
+
+def product_plan_text(root: Path) -> str:
+    rels = [
+        "README.md",
+        "README.zh.md",
+        "SKILL.md",
+        "REQUIREMENT-REVIEW.md",
+        "TODO-TECH.md",
+        "TECH-INTERFACE-REQUEST.md",
+    ]
+    patterns = ["*PRD*", "*prd*", "*spec*", "*SPEC*", "*prototype*", "*Prototype*", "*frontend*", "*Frontend*", "*backend*", "*Backend*", "docs*"]
+    paths: set[Path] = {root / rel for rel in rels if (root / rel).exists()}
+    for pattern in patterns:
+        paths.update(p for p in root.rglob(pattern) if p.is_file())
+    return "\n".join(read_text(p) for p in sorted(paths))
+
+
+def requires_s5(root: Path) -> tuple[bool, str]:
+    if any((root / marker).exists() for marker in S5_MARKERS):
+        return True, "S5 artifact is present"
+    if not frontend_artifact_exists(root):
+        return False, ""
+    text = product_plan_text(root)
+    if any(re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE) for pattern in DATA_MCP_FRONTEND_PATTERNS):
+        return True, "data/MCP/API-driven frontend Stage 1 package"
+    return False, ""
 
 
 def checks_for_stage(root: Path, stage: str) -> list[dict[str, Any]]:
@@ -245,9 +319,6 @@ def checks_for_stage(root: Path, stage: str) -> list[dict[str, Any]]:
             and bool(re.search(r"(deviation|gap|blocker|偏差|缺口|整改|Stage 2|阶段 2)", evidence, flags=re.IGNORECASE))
         )
 
-    def s5_present() -> bool:
-        return any((root / rel).exists() for rel in ["data-prd.md", "skill-prd.md", "mcp-audit.md", "frontend", "layers"])
-
     def no_user_path_mocks() -> bool:
         # Use code-shaped patterns rather than broad documentation words.
         # A meta-skill can explain "mock" policy in README/SKILL.md while still
@@ -340,10 +411,17 @@ def checks_for_stage(root: Path, stage: str) -> list[dict[str, Any]]:
         add("stage1.readme-zh-data-reality", contains_heading(readme_zh, ["数据真实性"]), "README.zh.md must contain 数据真实性.")
         add("stage1.product-plan", product_plan_exists(), "Stage 1 requires a product plan artifact.")
         add("stage1.tech-interface-contracts", bool(tech) and has_table(tech) and any(term in tech.lower() for term in ["mcp", "api", "schema", "接口", "数据"]), "TECH-INTERFACE-REQUEST.md must include concrete MCP/API/data/schema contracts.")
-        if s5_present():
-            for rel in ["VERSION", "data-prd.md", "skill-prd.md", "review-report.md", "frontend/index.html"]:
+        s5_required, s5_reason = requires_s5(root)
+        add(
+            "stage1.s5-required-for-data-frontend",
+            not s5_required or all((root / rel).exists() for rel in S5_REQUIRED_FILES) and all((root / rel / "README.md").exists() for rel in S5_REQUIRED_LAYER_DIRS),
+            "Data/MCP-driven frontend Stage 1 packages must include full S2/S5 artifacts, not Lite handoff only.",
+        )
+        if s5_required:
+            add("stage1.s5-reason", bool(s5_reason), f"S5 mandatory reason: {s5_reason}", severity="info")
+            for rel in S5_REQUIRED_FILES:
                 add(f"s5.file.{rel}", (root / rel).exists(), f"S5 semi-finished package requires {rel}.")
-            for rel in ["layers/L1-data", "layers/L2-aggregation", "layers/L3-compute", "layers/L4-llm", "layers/L5-presentation"]:
+            for rel in S5_REQUIRED_LAYER_DIRS:
                 add(f"s5.dir.{rel}", (root / rel / "README.md").exists(), f"S5 layer requires {rel}/README.md.")
             add("s5.skill-prd-layers", all(token in skill_prd for token in ["L1", "L2", "L3", "L4", "L5", "附录 A"]), "skill-prd.md must explicitly cover L1-L5 and appendix schema.")
             add("s5.data-prd-contract", all(token in data_prd for token in ["P0", "期望接口", "降级", "验收"]), "data-prd.md must include P0, interface expectations, degradation, and acceptance criteria.")
