@@ -35,7 +35,6 @@ def make_component_cache() -> tuple[Path, str, str]:
         ["git", "-c", "user.email=test@example.com", "-c", "user.name=Test", "commit", "-m", "fixture"],
         cwd=cache,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
     )
     full = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cache, text=True).strip()
     os.environ["XDG_CACHE_HOME"] = str(xdg)
@@ -55,9 +54,22 @@ description: Validate frontend SoT gates.
 """,
     )
     write(
+        root / "skill.meta.json",
+        """{
+  "id": "frontend-sot-fixture",
+  "name": "Frontend SoT Fixture",
+  "description": "Fixture for validating frontend SoT gates.",
+  "input_schema": {
+    "zh": {},
+    "en": {}
+  }
+}
+""",
+    )
+    write(
         root / "README.md",
         f"""# Frontend SoT Fixture
-{evidence}
+{evidence}Stage 2 deviation: none.
 ## Data Sources
 
 | Data item | Source | Method | Last verified | Failure handling |
@@ -83,7 +95,8 @@ Verified pass with real API data. Inline data source/provenance, generated time,
 
 ## 验证证据
 
-已通过真实 API 数据验证。#antseer-data 包含数据来源、生成时间、样本量和时间范围。
+已通过真实 API 数据源验证。#antseer-data 包含数据来源、生成时间、样本量和时间范围。
+Stage 2 偏差：无。
 """,
     )
     write(root / "VERSION", "0.0.1\n")
@@ -92,8 +105,25 @@ Verified pass with real API data. Inline data source/provenance, generated time,
         root / "MCP-COVERAGE.md",
         """# MCP Coverage
 
-All data dependencies are verified and covered by API. Inline #antseer-data provenance is verified from the same API response.
+All data source dependencies are verified and covered by API. Inline #antseer-data provenance is verified from the same API response.
+Stage 2 deviation: none.
 """,
+    )
+
+
+def sign_complete_skill(root: Path) -> None:
+    subprocess.check_call(
+        [
+            sys.executable,
+            str(SCRIPT_DIR / "sign_stage_gate.py"),
+            str(root),
+            "--stage",
+            "complete",
+            "--write",
+            "--signer",
+            "frontend-sot-self-test",
+        ],
+        stdout=subprocess.DEVNULL,
     )
 
 
@@ -145,7 +175,7 @@ def write_good_frontend(path: Path) -> None:
     write(
         path,
         """<!doctype html>
-<html>
+<html lang="zh-CN">
 <head>
 <style>
 :root { --antseer-primary: #36DD0C; --antseer-bg: #080807; --antseer-card: #1D1D1A; --antseer-info: #1196DD; }
@@ -155,7 +185,7 @@ def write_good_frontend(path: Path) -> None:
 <body>
 <main>
   <section class="ant-card">
-    <div id="app">Loading Empty Error Degraded</div>
+    <div id="app">加载 空态 错误 降级</div>
     <script id="antseer-data" type="application/json">{"source":"Verified API","generatedAt":"2026-05-04T00:00:00Z","sampleSize":1,"timeRange":"2026-05-04","items":[{"symbol":"BTC","price":1}]}</script>
     <script id="antseer-data-schema" type="application/json">{"fields":{"source":{"type":"string","required":true},"generatedAt":{"type":"datetime","required":true},"sampleSize":{"type":"number","required":true},"items.symbol":{"type":"string","required":true},"items.price":{"type":"number","required":true}}}</script>
     <script>
@@ -168,7 +198,7 @@ def write_good_frontend(path: Path) -> None:
       const payload = JSON.parse(document.getElementById('antseer-data').textContent);
       render(createViewModel(calculateSignal(adaptPayload(payload))));
     </script>
-    <footer>Data Source: Verified API · Powered by Antseer.ai</footer>
+    <footer>数据来源：已验证接口 · 由 Antseer.ai 提供</footer>
   </section>
 </main>
 </body>
@@ -210,7 +240,6 @@ function render(rawPayload) {
 document.body.insertAdjacentHTML('beforeend', 'Powered by Antseer.ai');
 """,
     )
-
     report = validate_package(root, stage="complete", run_checks=False)
     errors = "\n".join(report.errors)
     required_fragments = [
@@ -241,6 +270,7 @@ def test_good_stage2_frontend_passes_with_short_commit_and_viewmodel_map() -> No
     root = Path(tempfile.mkdtemp(prefix="frontend-sot-good-"))
     make_complete_skill(root, commit7, name="good-frontend-sot")
     write_good_frontend(root / "frontend" / "index.html")
+    sign_complete_skill(root)
     report = validate_package(root, stage="complete", run_checks=False)
     assert report.ok, "compliant Stage 2 frontend should pass: " + "\n".join(report.errors)
 
@@ -343,13 +373,13 @@ def test_invalid_json_contract_fails() -> None:
     write(
         root / "frontend" / "index.html",
         """<!doctype html>
-<html><head><style>:root { --antseer-primary:#36DD0C; --antseer-bg:#080807; }</style></head>
+<html lang="zh-CN"><head><style>:root { --antseer-primary:#36DD0C; --antseer-bg:#080807; }</style></head>
 <body><main>
-<div id="app">Loading Empty Error Degraded</div>
+<div id="app">加载 空态 错误 降级</div>
 <script id="antseer-data" type="application/json"></script>
 <script id="antseer-data-schema" type="application/json">not-json</script>
 <script>function adaptPayload(payload){return payload;} function calculateSignal(domain){return domain;} function createViewModel(signal){return {items: [], signal};} function render(viewModel){document.getElementById('app').textContent = viewModel.signal.source;}</script>
-<footer>Data Source: Verified API · Powered by Antseer.ai</footer>
+<footer>数据来源：已验证接口 · 由 Antseer.ai 提供</footer>
 </main></body></html>
 """,
     )
@@ -371,6 +401,20 @@ def test_stage1_missing_commit_or_deviation_docs_fails() -> None:
     assert "deviations must be recorded" in errors
 
 
+def test_visible_html_must_be_chinese() -> None:
+    _, commit12, _ = make_component_cache()
+    root = Path(tempfile.mkdtemp(prefix="frontend-sot-html-chinese-"))
+    make_complete_skill(root, commit12, name="html-chinese-sot")
+    write_good_frontend(root / "frontend" / "index.html")
+    path = root / "frontend" / "index.html"
+    html = path.read_text(encoding="utf-8").replace("加载 空态 错误 降级", "Loading Empty Error Degraded")
+    path.write_text(html, encoding="utf-8")
+    report = validate_package(root, stage="complete", run_checks=False)
+    errors = "\n".join(report.errors)
+    assert not report.ok, "visible HTML English UI copy should fail the Chinese-first gate"
+    assert "Chinese-first gate" in errors or "visible UI copy" in errors
+
+
 if __name__ == "__main__":
     test_bad_stage2_frontend_fails()
     test_fake_component_commit_fails()
@@ -382,4 +426,5 @@ if __name__ == "__main__":
     test_inline_json_mock_terms_fail()
     test_invalid_json_contract_fails()
     test_stage1_missing_commit_or_deviation_docs_fails()
+    test_visible_html_must_be_chinese()
     print("frontend SoT regression tests passed")

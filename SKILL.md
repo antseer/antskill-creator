@@ -22,6 +22,16 @@ compatibility: filesystem, python3, git
 
 > 两阶段生命周期回答“这个包当前真实可用到什么程度”；S0-S5 流水线回答“从一个想法如何一步步做出可交付 skill”。两者是正交关系，不互相替代。
 
+
+## Strict stage-gate signature
+
+Stage pass claims require a strict signature. Do not say “Stage 1 passed” or “Stage 2 passed” unless both are true:
+
+1. `validate_shareable_skill.py <skill_dir> --stage requirement|complete` passes.
+2. `STAGE-GATE-SIGNATURE.json` exists and verifies fresh with `scripts/sign_stage_gate.py --verify`.
+
+The signature is a hash-bound reviewer attestation that data PRD, skill PRD, Skill docs, frontend, L1-L5 layer docs, prompts, and validation checks are logically unified and complete. Any signed-file edit invalidates it; rerun the signer.
+
 ## Core promise
 
 这个 skill 不做“表面包装”。每次先回答三个现实问题：
@@ -73,6 +83,7 @@ Stage 1 可以包含 L1-B / L2 缺口，但必须在 `TECH-INTERFACE-REQUEST.md`
 
 因此：
 - 做 S3 HTML、V2-style 改造、Stage 2 真实数据 UI、K 线 / 指标附图 / event marker / source footer 时，必须先同步或检查 `antseer-components` 外部缓存并记录 commit。
+- 所有交付 HTML 的可见 UI 文案必须使用中文，`<html>` 必须声明 `lang="zh-CN"`；英文只允许出现在品牌名、ticker、协议/技术缩写、URL、版本号等不可翻译标识中。
 - Stage 1 前端要尽量符合组件库规范；不符合项必须写入 `review-report.md`、`TODO-TECH.md` 或 `TECH-INTERFACE-REQUEST.md`，作为 Stage 2 blocker。
 - Stage 2 前端必须符合 `references/antseer-components-standard.md` 的代码风格、UI 风格、设计样式、数据契约、官网 JSON 模板和 host 嵌入规则；任一 critical 不符合，不得称为 Finished Skill。
 
@@ -359,7 +370,8 @@ split 输出必须包含：
 12. 不得删除或省略方法论、流水线编排和阶段门禁；轻量分享包也必须至少保留 `PIPELINE.md` + `STAGE-GATES.md`，完整 creator 包必须保留 `methodology/`、`sop/`、`quality/`
 13. Antseer frontend / Stage 2 / 发布前验收必须通过子 agent 独立规范复核；无 P0/P1 后才允许声明完成或 push
 14. `antseer-components` 是前端权威参考和硬门禁：Stage 1 尽量符合并披露偏差；Stage 2 必须符合代码风格、UI 风格、设计样式和数据契约
-15. 后续 skill 默认发布到 `/Users/rick/code/job/external/test_skills` / `https://github.com/antseer/test_skills.git`；发布前参考同仓库已有 skill 写法，但不得覆盖无关改动或继承未验证内容
+15. HTML 必须中文：所有用户可见 UI 文案、按钮、状态、placeholder、aria-label、title、alt、source footer 都用中文；英文只允许作为品牌名、ticker、协议/技术缩写、URL、版本号等不可翻译标识
+16. 后续 skill 默认发布到 `/Users/rick/code/job/external/test_skills` / `https://github.com/antseer/test_skills.git`；发布前参考同仓库已有 skill 写法，但不得覆盖无关改动或继承未验证内容
 
 ## input_schema standard
 

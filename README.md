@@ -99,7 +99,7 @@ This meta-skill does not require external market data. It operates on local skil
 | Stage 2 scaffold smoke test | raw complete scaffold fails until release-file placeholders are filled; filled fixture passes | pass with filled sample values | 2026-05-04 |
 | Executable validation gate | `PYTHONDONTWRITEBYTECODE=1 python scripts/validate_shareable_skill.py . --stage complete --run-checks` | pass | 2026-05-04 |
 | Structured audit report | `PYTHONDONTWRITEBYTECODE=1 python scripts/audit_skill.py . --stage complete --run-checks --format json` | pass | 2026-05-04 |
-| Frontend SoT regression tests | bad Stage 2, fake commit, good Stage 2 golden fixture, root HTML + linked/root-absolute asset gates, inline mock JSON terms, invalid JSON contract, Stage 1 commit/deviation gates | pass | 2026-05-04 |
+| Frontend SoT regression tests | bad Stage 2, fake commit, good Stage 2 golden fixture, root HTML + linked/root-absolute asset gates, inline mock JSON terms, invalid JSON contract, Stage 1 commit/deviation gates, visible HTML Chinese-language gate | pass | 2026-05-05 |
 | Release boundary check | Confirm component checkout, `.git`, `node_modules`, `.skill`, pycache, swap files, and generated caches are absent from package source | pass | 2026-05-04 |
 | Repository boundary rule | Add `references/skill-publishing-standard.md`; creator stays in `https://github.com/antseer/skill-creator-rick`; generated Stage 1 / Stage 2 skills publish to `/Users/rick/code/job/external/test_skills` / `https://github.com/antseer/test_skills.git`; require reference-first writing and dirty-tree protection | pass | 2026-05-04 |
 

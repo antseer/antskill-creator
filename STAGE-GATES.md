@@ -54,6 +54,30 @@ Required split output:
 
 ---
 
+
+## Strict Stage-Gate Signature
+
+No package may be called Stage 1 or Stage 2 merely because the structural validator passes. Before declaring a stage pass, a strict reviewer agent must generate `STAGE-GATE-SIGNATURE.json` with `scripts/sign_stage_gate.py`.
+
+The signature verifies cross-document consistency across:
+
+- `data-prd.md` statistical methodology, scope, freshness, history, acceptance rules
+- `skill-prd.md` module logic, schemas, state machine, display rules
+- `SKILL.md`, README files, handoff docs, and interface requests
+- `frontend/index.html` visible parameters, numbers, labels, states, source/footer text
+- L1-L5 layer docs, L4 prompts, executable validation check config
+
+A signature is valid only while the signed file hashes match. Any edit to signed files makes it stale. The normal validator now rejects Stage 1 / Stage 2 pass if the signature is missing or stale.
+
+Signature commands:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python /Users/rick/.claude/skills/skill-creator-rick/scripts/sign_stage_gate.py <skill_dir> --stage requirement --write --signer strict-stage-gate-reviewer
+PYTHONDONTWRITEBYTECODE=1 python /Users/rick/.claude/skills/skill-creator-rick/scripts/sign_stage_gate.py <skill_dir> --stage requirement --verify
+```
+
+For Stage 2, replace `requirement` with `complete` after real data coverage evidence exists.
+
 ## Gate 2 — Stage 1 Semi-finished Skill gate
 
 A package can be called **Stage 1 Semi-finished Skill** only if all critical items pass.
@@ -79,6 +103,8 @@ If any S5-specific artifact exists, the package is judged by the stricter S5 str
 - Frontend or output experience is specified enough for engineering to build
 - If a frontend exists, `antseer-components` has been synced/checked, cache commit is recorded, and Stage 1 deviations from `references/antseer-components-standard.md` are disclosed as handoff gaps
 - Stage 1 frontend follows Antseer code/UI/design style as much as possible: token palette, component structure, source footer, no vendored component cache, no host-owned root width/padding/centering unless explicitly listed as a Stage 2 blocker
+- All deliverable HTML uses Chinese visible UI copy and declares `<html lang="zh-CN">`; English is allowed only for brand names, tickers, protocol/technical abbreviations, URLs, and version identifiers
+- `STAGE-GATE-SIGNATURE.json` exists, is fresh, and verifies data PRD / skill PRD / frontend / Skill / handoff docs are logically unified
 - Backend capability requirements are specified when backend is needed
 - Every mock / static / proxy / stub data item is listed with future real MCP / API / database replacement path
 - The package does **not** claim direct-use / production / complete readiness
@@ -147,6 +173,7 @@ A package can be called **Stage 2 Finished Skill** only if all critical items pa
   - UI style uses Antseer tokens / canonical palette and no ad-hoc theme colors
   - design style covers loading / empty / error / degraded states, responsive behavior, source footer, and visible data-source evidence
   - official HTML template includes `#antseer-data` and `#antseer-data-schema`
+  - visible UI copy is Chinese and `<html lang="zh-CN">` is declared; English is allowed only for brand names, tickers, protocol/technical abbreviations, URLs, and version identifiers
   - root / `.container` / `main` does not own host width, centering, or outer padding
 
 ### Validation command

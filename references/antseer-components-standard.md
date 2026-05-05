@@ -74,6 +74,7 @@ bash /Users/rick/.claude/skills/skill-creator-rick/scripts/sync_antseer_componen
 | 外层布局 | 不应在 root 限宽 / 居中 / 加外边距；若旧页面暂存，必须列为整改项 | root / `.container` / `main` 不得 `max-width`、`margin: 0 auto` 或承担 host padding |
 | 数据契约 | mock 可以存在，但必须来自 PRD schema，并在 `Data Reality` 标明替换路径 | 用户主路径不得有 mock / fixture / random / synthetic；内联数据也必须来自真实验证产物 |
 | 官网 JSON 模板 | 尽量提供 `#antseer-data` / `#antseer-data-schema` | 必须提供 `#antseer-data` / `#antseer-data-schema`，可被官网 JSON 包装 |
+| HTML 语言 | 必须声明 `<html lang="zh-CN">`；用户可见 UI 文案用中文，英文只作为不可翻译标识保留 | 必须声明 `<html lang="zh-CN">`；按钮、状态、placeholder、aria-label、title、alt、source footer 全部中文 |
 | 状态 | 至少覆盖主 happy path + loading/empty/error 中的关键状态 | 关键组件必须有 loading / empty / error / degraded 数据源状态 |
 | 发布门禁 | 不符合项可作为 Stage 2 blocker 披露 | 任一 critical 不符合即禁止标记 Stage 2 或发布为 finished |
 
@@ -84,6 +85,7 @@ Stage 2 的“必须符合”包括三类硬门禁：
 1. **代码风格硬门禁**：数据适配、业务计算、view model、renderer 分层；无 `Math.random` / fake / demo / fallback 数据进入用户路径。
 2. **UI 风格硬门禁**：使用 Antseer tokens / canonical palette；无临时主题色；无 host-owned root 宽度 / padding / 居中。
 3. **设计样式硬门禁**：组件状态、响应式、source footer、数据来源可见、错误 / 空态 / 降级态齐全。
+4. **HTML 语言硬门禁**：所有交付 HTML 的可见 UI 文案必须中文，`<html lang="zh-CN">` 必须存在；英文只允许用于 Antseer、ticker、MCP/API/JSON/URL、版本号等不可翻译标识。
 
 ## 3.0 官网 JSON 响应交付形态
 

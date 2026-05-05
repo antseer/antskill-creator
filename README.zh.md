@@ -99,7 +99,7 @@
 | Stage 2 脚手架冒烟测试 | 原始 complete scaffold 必须在 release 配置占位符填完前失败；填充示例值后 pass | pass with filled sample values | 2026-05-04 |
 | 可执行校验闸门 | `PYTHONDONTWRITEBYTECODE=1 python scripts/validate_shareable_skill.py . --stage complete --run-checks` | pass | 2026-05-04 |
 | 结构化审计报告 | `PYTHONDONTWRITEBYTECODE=1 python scripts/audit_skill.py . --stage complete --run-checks --format json` | pass | 2026-05-04 |
-| Frontend SoT 回归测试 | bad Stage 2、fake commit、good Stage 2 金样本、root HTML + 引用/root-absolute 资源门禁、内联 mock JSON 词、非法 JSON contract、Stage 1 commit/deviation 门禁 | pass | 2026-05-04 |
+| Frontend SoT 回归测试 | bad Stage 2、fake commit、good Stage 2 金样本、root HTML + 引用/root-absolute 资源门禁、内联 mock JSON 词、非法 JSON contract、Stage 1 commit/deviation 门禁、HTML 可见中文门禁 | pass | 2026-05-05 |
 | 发布边界检查 | 确认组件库 checkout、`.git`、`node_modules`、`.skill`、pycache、swap 文件和生成缓存未进入 package source | pass | 2026-05-04 |
 | 仓库边界规则 | 新增 `references/skill-publishing-standard.md`；creator 保持在 `https://github.com/antseer/skill-creator-rick`；生成的 Stage 1 / Stage 2 成品 skill 发布到 `/Users/rick/code/job/external/test_skills` / `https://github.com/antseer/test_skills.git`；要求先参考同仓库写法并保护 dirty tree | pass | 2026-05-04 |
 

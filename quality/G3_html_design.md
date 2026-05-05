@@ -33,6 +33,7 @@
 - [ ] Stage 2：设计样式硬达标：loading / empty / error / degraded 状态、source footer、响应式和数据来源证据齐全
 - [ ] Stage 2：正式 HTML 模板包含 `#antseer-data` 与 `#antseer-data-schema`
 - [ ] Stage 2：root / `.container` / `main` 不设置 `max-width`、`margin: 0 auto` 或外层 padding
+- [ ] HTML 必须中文：`<html lang="zh-CN">` 已声明；所有用户可见文案、按钮、状态、placeholder、aria-label、title、alt、source footer 使用中文；英文仅限品牌名、ticker、协议/技术缩写、URL、版本号等不可翻译标识
 
 ## G3.3 · 高保真要求(🔴 Critical)
 
@@ -81,6 +82,7 @@
 | 未同步 antseer-components | 先执行 `scripts/sync_antseer_components.sh`，记录外部缓存 commit，再重跑 G3 |
 | 把组件库 node_modules / demo 数据复制进 Skill | 删除 vendored 缓存，只保留真实 Skill 源码和必要规范引用 |
 | Stage 2 前端缺 `#antseer-data` / schema / source footer | 补官网 JSON 模板契约和来源 footer，再重跑门禁 |
+| HTML 可见文案是英文 | 改为中文，并声明 `<html lang="zh-CN">`；只保留 Antseer、BTC、MCP、API、URL、版本号等不可翻译标识 |
 | root 容器承担页面宽度 / 居中 / padding | 删除 root 约束，交给 host page；只保留内部 section/card spacing |
 | renderer 直接读 MCP payload 或生成 fallback | 增加 adapter / view model 层，renderer 只消费 view model |
 | 画完才登记 visual-registry | 回 S3 重新确认主色/字体/Hero,修改若撞脸的地方,重跑门禁 |

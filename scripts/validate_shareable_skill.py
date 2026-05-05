@@ -15,6 +15,8 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from html import unescape
+from html.parser import HTMLParser
 from pathlib import Path
 
 # This validator rejects __pycache__ and *.pyc files as package junk. Make the
@@ -148,6 +150,33 @@ FRONTEND_STATE_PATTERNS = {
     "error": r"\b(error|hasError|catch\s*\(|错误|失败)",
     "degraded": r"\b(degraded|stale|unavailable|fallbackState|降级|不可用)",
 }
+HTML_VISIBLE_ATTRS = {"placeholder", "aria-label", "title", "alt", "value"}
+HTML_SKIP_TEXT_TAGS = {"script", "style", "template", "noscript"}
+HTML_ALLOWED_LATIN_PATTERNS = [
+    # Brand / product terms that may appear inside otherwise Chinese UI copy.
+    r"\bAntseer(?:\.ai)?\b",
+    r"\bSkill(?:Hub)?\b",
+    # Technical abbreviations, market tickers, schema IDs, and version markers.
+    r"\b(?:MCP|API|JSON|HTML|CSS|JS|TS|DOM|UI|URL|PRD|SOP|SLA|SDK|CDN)\b",
+    r"\b[LPDGS]\d+[A-Z]?\b",
+    r"\b[A-Z0-9]{2,12}(?:/[A-Z0-9]{2,12})?\b",
+    r"\bv?\d+(?:\.\d+)*(?:[-+][A-Za-z0-9_.-]+)?\b",
+    r"\bdemo-v\d+\b",
+    r"https?://\S+",
+]
+HTML_ENGLISH_UI_PATTERNS = [
+    r"\bLoading\b",
+    r"\bEmpty\b",
+    r"\bError\b",
+    r"\bDegraded\b",
+    r"\bSubmit\b",
+    r"\bCancel\b",
+    r"\bSearch\b",
+    r"\bSource\b",
+    r"\bVerified\b",
+    r"\bData Source\b",
+    r"\bPowered by\b",
+]
 PARAM_HINT_PATTERNS = [
     r"\bparameters?\b",
     r"参数",
@@ -156,6 +185,7 @@ PARAM_HINT_PATTERNS = [
     r"<[a-zA-Z_][a-zA-Z0-9_-]*>",
 ]
 RUN_CHECKS_FILE = "validation.checks.json"
+SIGNATURE_FILE = "STAGE-GATE-SIGNATURE.json"
 UNRESOLVED_PLACEHOLDER_PATTERNS = [
     r"(^|\|)\s*TODO\s*(\||$)",
     r":\s*TODO(\s|$)",
@@ -715,6 +745,88 @@ def frontend_ui_style_misses(aggregate: str) -> list[str]:
     return misses
 
 
+class VisibleHtmlTextParser(HTMLParser):
+    """Collect user-visible text/attributes while ignoring scripts/styles."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.skip_stack: list[str] = []
+        self.items: list[tuple[int, str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag in HTML_SKIP_TEXT_TAGS:
+            self.skip_stack.append(tag)
+            return
+        for name, value in attrs:
+            if value is None:
+                continue
+            if name.lower() in HTML_VISIBLE_ATTRS:
+                self.items.append((self.getpos()[0], value))
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if self.skip_stack and self.skip_stack[-1] == tag:
+            self.skip_stack.pop()
+
+    def handle_data(self, data: str) -> None:
+        if self.skip_stack:
+            return
+        self.items.append((self.getpos()[0], data))
+
+
+def normalize_visible_html_text(text: str) -> str:
+    text = unescape(text)
+    text = re.sub(r"\{\{[^}]+\}\}", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def strip_allowed_latin_terms(text: str) -> str:
+    out = text
+    for pattern in HTML_ALLOWED_LATIN_PATTERNS:
+        out = re.sub(pattern, " ", out, flags=re.IGNORECASE)
+    return out
+
+
+def html_chinese_language_misses(root: Path, html_files: list[Path]) -> list[str]:
+    """Require generated/user-path HTML visible UI copy to be Chinese-first."""
+    misses: list[str] = []
+
+    for html in html_files:
+        text = read_text(html)
+        rel = html.relative_to(root)
+
+        lang_match = re.search(r"<html\b[^>]*\blang=[\"']([^\"']+)[\"']", text, flags=re.IGNORECASE)
+        if not lang_match:
+            misses.append(f"{rel} <html> must declare lang=\"zh-CN\"")
+        elif lang_match.group(1).lower() not in {"zh-cn", "zh", "zh-hans"}:
+            misses.append(f"{rel} <html> lang must be zh-CN/zh/zh-Hans, got {lang_match.group(1)!r}")
+
+        parser = VisibleHtmlTextParser()
+        try:
+            parser.feed(text)
+        except Exception:
+            continue
+
+        visible_text = " ".join(
+            normalize_visible_html_text(raw)
+            for _, raw in parser.items
+            if normalize_visible_html_text(raw)
+        )
+        if visible_text and not re.search(r"[\u4e00-\u9fff]", visible_text):
+            misses.append(f"{rel} visible UI copy must be Chinese; no Chinese characters detected")
+        english_hits = []
+        for pattern in HTML_ENGLISH_UI_PATTERNS:
+            for match in re.finditer(pattern, visible_text, flags=re.IGNORECASE):
+                english_hits.append(match.group(0))
+        if english_hits:
+            unique_hits = list(dict.fromkeys(english_hits))[:8]
+            misses.append(f"{rel} visible UI copy must be Chinese; English UI terms found: " + ", ".join(unique_hits))
+
+    return misses
+
+
 def validate_frontend_sot(root: Path, stage: str) -> tuple[list[str], list[str]]:
     """Apply antseer-components as frontend SoT.
 
@@ -777,6 +889,8 @@ def validate_frontend_sot(root: Path, stage: str) -> tuple[list[str], list[str]]
         text = read_text(html)
         rel = html.relative_to(root)
         soft_misses.extend(frontend_json_contract_misses(root, html, text))
+
+    soft_misses.extend(html_chinese_language_misses(root, html_files))
 
     if stage == "complete":
         soft_misses.extend(stage1_hard_misses)
@@ -967,6 +1081,37 @@ def run_executable_checks(root: Path) -> list[str]:
     return run_errors
 
 
+
+def validate_stage_gate_signature(root: Path, stage: str) -> list[str]:
+    """Require strict cross-document signature before any Stage pass."""
+    script = Path(__file__).resolve().parent / "sign_stage_gate.py"
+    if not script.exists():
+        return ["Strict stage-gate signature verifier is missing: scripts/sign_stage_gate.py"]
+    if not (root / SIGNATURE_FILE).exists():
+        return [f"Missing strict stage-gate signature: {SIGNATURE_FILE}. Run scripts/sign_stage_gate.py --stage {stage} --write before declaring Stage pass"]
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script), str(root), "--stage", stage, "--verify"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=20,
+            check=False,
+        )
+    except Exception as e:
+        return [f"Strict stage-gate signature verification failed to start: {e}"]
+    if result.returncode != 0:
+        lines = (result.stdout or result.stderr).strip().splitlines()
+        details = []
+        for line in lines:
+            line = line.strip()
+            if line.startswith("-"):
+                details.append(line[1:].strip())
+        if not details and lines:
+            details = [lines[-1]]
+        return ["Strict stage-gate signature invalid: " + "; ".join(details[:5])]
+    return []
+
 def validate_requirement(root: Path) -> list[str]:
     errors: list[str] = []
     readme = read_text(root / "README.md")
@@ -1017,6 +1162,8 @@ def validate_requirement(root: Path) -> list[str]:
         errors.append("README.md Data Reality appears to contain only template TODO rows")
 
     errors.extend(validate_s5_semifinished(root))
+    if not errors:
+        errors.extend(validate_stage_gate_signature(root, "requirement"))
 
     return errors
 
@@ -1101,6 +1248,9 @@ def validate_complete(root: Path, run_checks: bool = False) -> list[str]:
         hits = has_unresolved_placeholders(read_text(p))
         if hits:
             errors.append(f"Unresolved placeholders in {p.relative_to(root)}: " + "; ".join(hits[:3]))
+
+    if not errors:
+        errors.extend(validate_stage_gate_signature(root, "complete"))
 
     if run_checks:
         errors.extend(run_executable_checks(root))

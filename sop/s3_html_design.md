@@ -16,10 +16,11 @@
 
 1. **规范先于创作**。先读 design-system 和 visual-registry,再动手。
 2. **组件库等同前端权威源**。`antseer-components` 的代码风格、UI 风格、设计样式和组件契约是前端 SoT；Stage 1 尽量符合并披露偏差，Stage 2 必须符合。
-3. **开工前登记**。选主色、字体、Hero 类型,先在 visual-registry 登记本 Skill,再开写。不允许边画边改再登记。
-4. **对齐 PRD**。PRD 每个 L5 组件都必须有实现,缺的标明 v2 延期。
-5. **状态完整**。不只画 happy path,loading / empty / error / hover / click 全要有。
-6. **数据契约优先**。HTML 里每个动态字段对应到某个 Dxx(S1/S2 的 ID),前端不自造数据。
+3. **HTML 必须中文**。所有可见 UI 文案、按钮、状态、placeholder、aria-label、title、alt、source footer 用中文；`<html lang="zh-CN">` 必须声明。英文只保留品牌名、ticker、协议/技术缩写、URL、版本号等不可翻译标识。
+4. **开工前登记**。选主色、字体、Hero 类型,先在 visual-registry 登记本 Skill,再开写。不允许边画边改再登记。
+5. **对齐 PRD**。PRD 每个 L5 组件都必须有实现,缺的标明 v2 延期。
+6. **状态完整**。不只画 happy path,loading / empty / error / hover / click 全要有。
+7. **数据契约优先**。HTML 里每个动态字段对应到某个 Dxx(S1/S2 的 ID),前端不自造数据。
 
 ---
 
@@ -74,6 +75,7 @@ bash /Users/rick/.claude/skills/skill-creator-rick/scripts/sync_antseer_componen
 - 底部标注 `demo-v1 · Powered by Antseer.ai`
 - 正式交付给官网 / SkillHub 的 HTML 必须包含 `#antseer-data` 和 `#antseer-data-schema`
 - 最外层 root / `.container` / `main` 不设置 `max-width`、`margin: 0 auto` 或外层 padding；这些由 host page 负责
+- `<html lang="zh-CN">` 必须存在，所有可见 UI 文案必须中文；不要出现英文按钮、英文状态、英文 placeholder、英文 source footer
 
 ### 2.2 规范达标
 
@@ -141,7 +143,8 @@ Hero 必须有结论(3 秒内可理解),不允许只放输入表单。
 11. 至少实现一个完整交互链路(输入 → 切换 → 重渲染)
 12. 检查 token 引用,全部颜色/字号/间距无硬编码
 13. 检查 `antseer-components` SoT：代码风格、UI 风格、设计样式、host 嵌入、source footer、`#antseer-data` / schema
-14. 执行 G3 门禁
+14. 检查 HTML 中文门禁：`lang="zh-CN"`、按钮/状态/placeholder/aria/title/alt/source footer 均为中文
+15. 执行 G3 门禁
 ```
 
 ## §4 产出物
@@ -162,6 +165,7 @@ Hero 必须有结论(3 秒内可理解),不允许只放输入表单。
 | 颜色/字号硬编码 | 全部改用 CSS 变量,引 tokens |
 | 只画 happy path | 每个组件补 loading / empty,至少 Hero + 主图表补 error 态 |
 | 没有响应式 | 至少补一个 ≤ 480px 的断点样式 |
+| 英文 UI 文案 | 全部改中文；只保留品牌名、ticker、MCP/API/JSON/URL/版本号等不可翻译标识 |
 | 前端自造数据(PRD 里没有的字段) | 删掉或回 S2 补 PRD |
 | 少了 PRD 某个 L5 组件 | 要么补上,要么在 PRD 明确标"v2 延期" |
 | lorem ipsum 或占位图 | 替换为基于 PRD 附录 A 的真实感 mock |

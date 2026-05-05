@@ -78,6 +78,8 @@ renderer 只渲染 view model，不直接请求数据、不生成业务口径、
 
 引用 Antseer Design System：暖黑背景、卡片、边框、字体、正负色、金融图表、两栏 input-only/output-only。
 
+硬约束：交付 HTML 必须中文。`<html lang="zh-CN">` 必须声明；所有按钮、状态、placeholder、aria-label、title、alt、source footer 和可见说明文案必须中文。英文只允许保留品牌名、ticker、协议/技术缩写、URL、版本号等不可翻译标识。
+
 ### 4.8 交互与图表规范
 
 写清主图、附图、marker、拖动缩放、多选、事件列表、tooltip 和空态。
@@ -129,3 +131,4 @@ phase: {Version}
 3. 数据从哪里来，缺了怎么办。
 4. 视觉应该对齐哪套产品规范。
 5. 如何证明自己没有引入 mock、破坏交互或篡改数据口径。
+6. 如何证明 HTML 可见 UI 文案已经中文化，且没有英文按钮、英文状态、英文 placeholder 或英文 source footer。
