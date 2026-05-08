@@ -1,23 +1,23 @@
 {
   "signature_version": "1.0",
   "stage": "complete",
-  "signed_at": "2026-05-05T08:28:14+00:00",
-  "signer": "strict-stage-gate-reviewer",
+  "signed_at": "2026-05-08T09:14:26+00:00",
+  "signer": "Codex",
   "agent_role": "strict-stage-gate-reviewer",
   "status": "PASS",
-  "package_digest": "4b21e55d3f31998c70f50b817da66c664a93e7f1510ca29add6534c12c797666",
+  "package_digest": "09f6dd6564550158eecf7cb2a7f8513663a2024c87d7514dd1d7166f612ef663",
   "files": {
     "README.md": "2f627b794a12d1ac8284f2958e7d7aa547c236322c6b4f3758da11591c657e2e",
     "README.zh.md": "1cf9add206bf6f1488a47595ede8b111c1736d87edfe691757d679873a80acd4",
-    "SKILL.md": "75e74e7fbe7f1ddf7edbfcfc843d97f280bdd4054fce64be4f31546d9b942d22",
+    "SKILL.md": "5125dff9ac21f2f08057f1b76d23635385aff575c1dc28b4c6fb5742bda03774",
     "agents/openai.yaml": "d48b00073764cf27ba8bdcfc41d6eecb03e66feb2bb157e9826b0f7b8f7b8cb2",
     "scripts/audit_skill.py": "b0046bfac83899ab1ded9a75ce28e3d4a2e12ec8be85ff7afb33e0ad62ef0a1f",
     "scripts/package_skill.py": "ba552216e3d8e8bc9e38d008181a07a3cd1da338ba59e3444920914cd1338056",
     "scripts/quick_validate.py": "67cf5703402013936c8fb75ad6a1afecd8841d45cc5e606b634eb05825fde365",
     "scripts/self_test_frontend_sot.py": "bd5aee91cc9a966381896ee8ef323b1289c93a449c9f9e57256f5f2a1da3c6f2",
-    "scripts/sign_stage_gate.py": "7ed38799320b8c68d570881ca663a9982d77729f474c1afc29c0bdd1134cedf9",
+    "scripts/sign_stage_gate.py": "2b32d166e4c261617dfa137a8fef48660a355ebf8fb98ad3d14584b8df0fb866",
     "scripts/sync_mcp_truth.py": "a9501c5e31fb7b9caa4a6e1c5a463c5a3185a098865206b0c6d28a65b86a4ed9",
-    "scripts/validate_shareable_skill.py": "aff3a2256d08fda5b452f8f871f973c37035f9f10e318607b224df0a89e5005e",
+    "scripts/validate_shareable_skill.py": "097c6c1bf3d7e3e474013d093f6865bb868e7f5dfdfe39b173c46ee83714eada",
     "skill.meta.json": "303b72c50b85db0bcdb1b278279a943e7b4f33e0ad9fb8a8728de7f7173a3606",
     "validation.checks.json": "5182147bc17b3c489539334d30e65d94b919a1f5363e111ebfc4ceb637bad0e3"
   },
@@ -107,5 +107,5 @@
       "detail": "Stage 2 user path must not depend on mock/stub/fixture/demo/random data."
     }
   ],
-  "notes": ""
+  "notes": "Sync from local ~/.claude/skills/skill-creator-rick and remove generated MCP cache"
 }
